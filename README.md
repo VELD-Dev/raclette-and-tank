@@ -15,8 +15,8 @@ List of the supported games (theorically):
 ## How to use ?
 ### Step 1
 Go to `USRDIR > packed > levels > LEVEL_NAME`, use PSArcTool or PS3GameExtractor and extract:
-1. `global_cached.psarc` for the models and everything
-2. `global_uncached.psarc` for the scripts *(not necessary but can help fangame developers)*
+1. `level_cached.psarc` for the models and everything
+2. `level_uncached.psarc` for the scripts *(not necessary but can help fangame developers)*
 
 ### Step 2
 Open Blender.  
