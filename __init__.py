@@ -90,7 +90,7 @@ def extract_and_import(operator, context):
             
             # DOES SUPPORT POST-R2 GAMES
             if file == "assetlookup.dat":
-                stream = read_main_dat(filepath, 0x20)
+                stream = read_chunks_headers(filepath, headers['chunks_count'])
                 for idx, (h, soid, scount, soffset, slength) in enumerate(stream):
                     print("{0} {1}".format(hex(soid), soid))
                     if soid != IG_CHUNK_ID_MOBY or soid != IG_CHUNK_ID_MOBY_MODELS or soid != IG_CHUNK_ID_MOBY_MESHES or soid != IG_CHUNK_ID_MOBY_INDICES or soid != IG_CHUNK_ID_MOBY_VERTICES:
@@ -108,8 +108,8 @@ def extract_and_import(operator, context):
 def read_file_header(filepath):
     with open(filepath, 'rb') as f:
         f.seek(0)
-        magic1, magic2, chunks_count, header_length = struct.unpack(">IIII", f.read(0x10))
-
+        magic1, magic2, chunks_count, header_length = struct.unpack(">4I", f.read(0x10))
+        f.close()
         return {
             "magic1": magic1,
             "magic2": magic2,
@@ -117,14 +117,14 @@ def read_file_header(filepath):
             "header_length": header_length,
         }
 
-def read_main_dat(filepath, offset):
+def read_chunks_headers(filepath: str, count: int):
     with open(filepath, 'rb') as f:
-        f.seek(offset)
-        while f.readable():
+        f.seek(0x20)
+        for i in range(count):
             buff = f.read(0x10)
             if buff.__len__() < 0x10:
                 return
-            oid, offset, count, length = struct.unpack(">IIII", buff)
+            oid, offset, count, length = struct.unpack(">4I", buff)
             yield ({
                 "oid": oid,
                 "offset": offset,
