@@ -26,7 +26,7 @@ Click the check mark to enable the plugin.
 
 ### Step 3
 Click `File` in the topbar, then `📥 Import`.  
-Press `Extract & Import RAC Assets (.dat) (experimental)`.
+Press `Extract & Import RAC Assets (level folder)`.
 
 ### Step 4
 In the browser, search for `main.dat` or `assetlookup.dat` (depending on which game you want to export models)  
