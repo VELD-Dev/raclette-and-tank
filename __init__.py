@@ -79,18 +79,19 @@ def extract_and_import(operator, context):
 
     for file in filesonly:
         filepath = os.path.join(dirname, file)
+        base_stream = open(filepath, 'rb')
         print("\n----\n" + file)
-        headers = read_file_header(filepath)
+        headers = read_file_header(base_stream)
         print(headers)
         if int(headers["magic1"]) == 0x49474857:
 
             # DOES NOT SUPPORT ToD & QFB GAMES *YET*
             if file == "main.dat":
-                return
+                continue
             
             # DOES SUPPORT POST-R2 GAMES
             if file == "assetlookup.dat":
-                stream = read_chunks_headers(filepath, headers['chunks_count'])
+                stream = read_chunks_headers(base_stream, headers['chunks_count'])
                 for idx, (h, soid, scount, soffset, slength) in enumerate(stream):
                     print("{0} {1}".format(hex(soid), soid))
                     if soid != IG_CHUNK_ID_MOBY or soid != IG_CHUNK_ID_MOBY_MODELS or soid != IG_CHUNK_ID_MOBY_MESHES or soid != IG_CHUNK_ID_MOBY_INDICES or soid != IG_CHUNK_ID_MOBY_VERTICES:
@@ -105,32 +106,29 @@ def extract_and_import(operator, context):
 ########### HEXA FUNCTIONS LIBRARY ###########
 ##############################################
 
-def read_file_header(filepath):
-    with open(filepath, 'rb') as f:
-        f.seek(0)
-        magic1, magic2, chunks_count, header_length = struct.unpack(">4I", f.read(0x10))
-        f.close()
-        return {
-            "magic1": magic1,
-            "magic2": magic2,
-            "chunks_count": chunks_count,
-            "header_length": header_length,
-        }
+def read_file_header(stream):
+    stream.seek(0)
+    magic1, magic2, chunks_count, header_length = struct.unpack(">4I", stream.read(0x10))
+    return {
+        "magic1": magic1,
+        "magic2": magic2,
+        "chunks_count": chunks_count,
+        "header_length": header_length,
+    }
 
-def read_chunks_headers(filepath: str, count: int):
-    with open(filepath, 'rb') as f:
-        f.seek(0x20)
-        for i in range(count):
-            buff = f.read(0x10)
-            if buff.__len__() < 0x10:
-                return
-            oid, offset, count, length = struct.unpack(">4I", buff)
-            yield ({
-                "oid": oid,
-                "offset": offset,
-                "count": count,
-                "length": length
-            }, oid, offset, count, length)
+def read_chunks_headers(stream, count: int):
+    stream.seek(0x20) # 0x20 is the base offset of all the IGHW files for chunks headers
+    for i in range(count):
+        buff = stream.read(0x10)
+        if buff.__len__() < 0x10:
+            return
+        oid, offset, count, length = struct.unpack(">4I", buff)
+        yield ({
+            "oid": oid,
+            "offset": offset,
+            "count": count,
+            "length": length
+        }, oid, offset, count, length)
 
 ##############################################
 ########## EXTRACT AND IMPORT CLASS ##########
