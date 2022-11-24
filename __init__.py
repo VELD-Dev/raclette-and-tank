@@ -151,15 +151,6 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         description="Wether shrubs should be imported or not. If it is enabled, the map can be heavy.",
         default=True
     )
-    enum_file_version: bpy.props.EnumProperty(
-        name="IGFiles Version",
-        description="Version of the Insomniac Games Files version. (If unsure, do not check)",
-        items=(
-            ("IGHW3", "IGHW 3", "Insomniac Engine 2.0 (Tools of Destruction, Quest For Booty)"),
-            ("IGHW4", "IGHW 4", "Insomniac Engine 3.0 (ACIT, FFA, A4O, ITN)")
-        ),
-        default="IGHW3"
-    )
     
     def draw(self, context):
         pass
@@ -224,7 +215,7 @@ class EAI_PT_import_settings(bpy.types.Panel):
 
 
 def menu_func_import(self, context):
-    self.layout.operator(ExtractAndImport.bl_idname, text="Extract & Import RAC Level (.dat) (experimental)")
+    self.layout.operator(ExtractAndImport.bl_idname, text="Extract & Import RAC Level (level folder)")
 
 classes = [
     ExtractAndImport,
