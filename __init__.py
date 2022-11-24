@@ -46,9 +46,19 @@ import os
 import os.path
 import io
 import struct
+import enum
 
 
 
+###############################################
+################# CONSTANTS ###################
+###############################################
+
+IG_CHUNK_ID_MOBY = 0xD100
+IG_CHUNK_ID_MOBY_MODELS = 0xD700
+IG_CHUNK_ID_MOBY_MESHES = 0xDD00
+IG_CHUNK_ID_MOBY_VERTICES = 0xE200
+IG_CHUNK_ID_MOBY_INDICES = 0xE100
 
 ##############################################
 ########## GLOBAL FUNCTIONS LIBRARY ##########
@@ -73,10 +83,19 @@ def extract_and_import(operator, context):
         headers = read_file_header(filepath)
         print(headers)
         if int(headers["magic1"]) == 0x49474857:
-            if file == "main.dat" or file == "assetlookup.dat":
+
+            # DOES NOT SUPPORT ToD & QFB GAMES *YET*
+            if file == "main.dat":
+                return
+            
+            # DOES SUPPORT POST-R2 GAMES
+            if file == "assetlookup.dat":
                 stream = read_main_dat(filepath, 0x20)
                 for idx, (h, soid, scount, soffset, slength) in enumerate(stream):
-                    print("{6} {0}: {1} / {2}, {3}, {4}, {5}".format(idx, h, soid, scount, soffset, slength, file))
+                    print("{0} {1}".format(hex(soid), soid))
+                    if soid != IG_CHUNK_ID_MOBY or soid != IG_CHUNK_ID_MOBY_MODELS or soid != IG_CHUNK_ID_MOBY_MESHES or soid != IG_CHUNK_ID_MOBY_INDICES or soid != IG_CHUNK_ID_MOBY_VERTICES:
+                        continue
+                    print("{6} {0}: ({7}) {1} / (oid:{2}, offset:{3}, count:{4}, length:{5})".format(idx, h, hex(soid), hex(soffset), hex(scount), hex(slength), file, hex(soid)))
                     oid.append(int(soid))
                     count.append(int(scount))
                     offset.append(int(soffset))
@@ -103,7 +122,7 @@ def read_main_dat(filepath, offset):
         f.seek(offset)
         while f.readable():
             buff = f.read(0x10)
-            if buff.__len__ < 0x10:
+            if buff.__len__() < 0x10:
                 return
             oid, offset, count, length = struct.unpack(">IIII", buff)
             yield ({

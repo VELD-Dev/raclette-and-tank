@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 # NoesisPlugin files
+ignore/
 fmt_ratchetandclank_irb_new.py
