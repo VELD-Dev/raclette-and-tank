@@ -53,8 +53,8 @@ if 'bpy' in locals():
     importlib.reload(file_manager)
     importlib.reload(assets_manager)
 else:
-    import file_manager
-    import assets_manager
+    from . import file_manager
+    from . import assets_manager
 
 
 
