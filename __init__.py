@@ -77,7 +77,7 @@ def extract_and_import(operator, context):
     dirname = operator.directory
     print(dirname)
     filemanager = file_manager.FileManager(dirname)
-    assets_manager.AssetManager(filemanager)
+    assets_manager.AssetManager(filemanager, operator)
 
 '''
 def extract_and_import(operator, context):
@@ -157,7 +157,7 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     bl_description="Extracts and imports assets from a Ratchet & Clank level. Level have to be uncompressed."
     bl_options={"REGISTER"}
 
-    filename_ext = ""
+    filename_ext = ".dat"
     #filter_glob: bpy.props.StringProperty(
     #    default="*main.dat;*assetlookup.dat;*debug.dat",
     #    options={"HIDDEN"}
@@ -170,7 +170,7 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     #)
     directory: bpy.props.StringProperty()
     filter_glob: bpy.props.StringProperty(
-        default="",
+        default="*.dat",
         options={'HIDDEN'},
         maxlen=255
     )

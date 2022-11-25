@@ -11,7 +11,7 @@ class FileManager:
     def __init__(self, folderpath: str):
         print("FileManager: INIT")
         self.folderpath = folderpath
-        self.igfiles:  dict(io.BufferedReader) = dict()
+        self.igfiles: dict(io.BufferedReader) = dict()
         self.otherfiles: dict(io.BufferedReader) = dict()
         self.isIE2: bool = bool()
         self.loadfolder()
