@@ -48,12 +48,21 @@ import io
 import struct
 import enum
 
+if 'bpy' in locals():
+    import importlib
+    importlib.reload(file_manager)
+    importlib.reload(assets_manager)
+else:
+    import file_manager
+    import assets_manager
+
 
 
 ###############################################
 ################# CONSTANTS ###################
 ###############################################
 
+IG_SECTION_ID_MOBY = 0x1D100
 IG_CHUNK_ID_MOBY = 0xD100
 IG_CHUNK_ID_MOBY_MODELS = 0xD700
 IG_CHUNK_ID_MOBY_MESHES = 0xDD00
@@ -64,6 +73,13 @@ IG_CHUNK_ID_MOBY_INDICES = 0xE100
 ########## GLOBAL FUNCTIONS LIBRARY ##########
 ##############################################
 
+def extract_and_import(operator, context):
+    dirname = operator.directory
+    print(dirname)
+    filemanager = file_manager.FileManager(dirname)
+    assets_manager.AssetManager(filemanager)
+
+'''
 def extract_and_import(operator, context):
     dirname = operator.directory
     print(dirname)
@@ -101,7 +117,7 @@ def extract_and_import(operator, context):
                     count.append(int(scount))
                     offset.append(int(soffset))
                     length.append(int(slength))
-
+'''
 ##############################################
 ########### HEXA FUNCTIONS LIBRARY ###########
 ##############################################
@@ -173,7 +189,6 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         pass
 
     def execute(self, context):
-        print(str(self.directory))
         extract_and_import(self, context)
         return {"FINISHED"}
 
@@ -222,8 +237,6 @@ class EAI_PT_import_settings(bpy.types.Panel):
 
         sfile=context.space_data
         operator=sfile.active_operator
-        
-        layout.prop(operator, 'enum_file_version')
 
 ########################################
 ########## END OF THE CLASSES ##########
