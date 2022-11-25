@@ -52,9 +52,11 @@ if 'bpy' in locals():
     import importlib
     importlib.reload(file_manager)
     importlib.reload(assets_manager)
+    importlib.reload(mobys)
 else:
     from . import file_manager
     from . import assets_manager
+    from . import mobys
 
 
 
