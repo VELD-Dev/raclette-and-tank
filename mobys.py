@@ -34,15 +34,15 @@ def read_bangles(stream: io.BufferedReader):
 
 def read_new_moby(stream: io.BufferedReader, offset: int, headers: dict[str, int]):
     for i1 in range(headers["count"]):
-        #stream.seek(offset) # SPHERE BOUNDING (?)
-        #sb_x, sb_y, sb_z, sb_radius = struct.unpack('>3He', stream.read(0x8))
+        stream.seek(offset) # SPHERE BOUNDING (?)
+        sb_x, sb_y, sb_z, sb_radius = struct.unpack('>3Hf', stream.read(0x8))
 
         stream.seek(offset + 0x18) # REACHING BANGLES
         banglesCount1, banglesCount2 = struct.unpack('>2H', stream.read(0x04))
 
         stream.seek(offset + 0x24)
         for i2 in range(banglesCount1):
-            offset, count = struct.unpack('>2I', stream.read(0x8))
+            offset, count = struct.unpack('>2I', stream.read(0x08))
             print("BANGLE?: (offset: {0}, count: {1})".format(offset, count))
             yield {
                 'offset': offset,

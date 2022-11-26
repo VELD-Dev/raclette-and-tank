@@ -21,24 +21,23 @@
 # SOFTWARE.
 
 bl_info = {
-    "name" : "raclette-and-tank-importer",
-    "author" : "VELD-Dev",
-    "description" : (
+    "name": "raclette-and-tank-importer",
+    "author": "VELD-Dev",
+    "description": (
         "Raclette & Tank importer is an asset extractor and importer for Blender. "
         "R&T Importer was made for animators, fangame developers and all those fan stuff. "
         "R&T Importer IS NOT made for level editing ! Use Lunacy Level Editor instead."),
-    "blender" : (3, 2, 0),
-    "version" : (0, 0, 1),
-    "location" : "File > Import > Extract & Import RAC Assets",
-    "warning" : "Work in progress, be careful, the mod may crash Blender, always backup your files !",
+    "blender": (3, 2, 0),
+    "version": (0, 0, 1),
+    "location": "File > Import > Extract & Import RAC Assets",
+    "warning": "Work in progress, be careful, the mod may crash Blender, always backup your files !",
     "doc_url": "https://github.com/VELD-Dev/raclette-and-tank",
-    "category" : "Reverse-Engineering"
+    "category": "Reverse-Engineering"
 }
 
 from . import auto_load
 
 auto_load.init()
-
 
 import bpy
 import bpy_extras
@@ -50,17 +49,18 @@ import enum
 
 if 'bpy' in locals():
     import importlib
+
     importlib.reload(file_manager)
     importlib.reload(assets_manager)
     importlib.reload(mobys)
     importlib.reload(types)
+    importlib.reload(ties)
 else:
     from . import file_manager
     from . import assets_manager
     from . import mobys
     from . import types
-
-
+    from . import ties
 
 ###############################################
 ################# CONSTANTS ###################
@@ -73,6 +73,7 @@ IG_CHUNK_ID_MOBY_MESHES = 0xDD00
 IG_CHUNK_ID_MOBY_VERTICES = 0xE200
 IG_CHUNK_ID_MOBY_INDICES = 0xE100
 
+
 ##############################################
 ########## GLOBAL FUNCTIONS LIBRARY ##########
 ##############################################
@@ -82,6 +83,7 @@ def extract_and_import(operator, context):
     print(dirname)
     filemanager = file_manager.FileManager(dirname)
     assets_manager.AssetManager(filemanager, operator)
+
 
 '''
 def extract_and_import(operator, context):
@@ -122,33 +124,6 @@ def extract_and_import(operator, context):
                     offset.append(int(soffset))
                     length.append(int(slength))
 '''
-##############################################
-########### HEXA FUNCTIONS LIBRARY ###########
-##############################################
-
-def read_file_header(stream):
-    stream.seek(0)
-    magic1, magic2, chunks_count, header_length = struct.unpack(">4I", stream.read(0x10))
-    return {
-        "magic1": magic1,
-        "magic2": magic2,
-        "chunks_count": chunks_count,
-        "header_length": header_length,
-    }
-
-def read_chunks_headers(stream, count: int):
-    stream.seek(0x20) # 0x20 is the base offset of all the IGHW files for chunks headers
-    for i in range(count):
-        buff = stream.read(0x10)
-        if buff.__len__() < 0x10:
-            return
-        oid, offset, count, length = struct.unpack(">4I", buff)
-        yield ({
-            "oid": oid,
-            "offset": offset,
-            "count": count,
-            "length": length
-        }, oid, offset, count, length)
 
 ##############################################
 ########## EXTRACT AND IMPORT CLASS ##########
@@ -156,22 +131,22 @@ def read_chunks_headers(stream, count: int):
 
 class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     """Extracts and imports assets from a Ratchet & Clank level. Level have to be uncompressed."""
-    bl_idname="import_scene.eai"
-    bl_label="Select this folder"
-    bl_description="Extracts and imports assets from a Ratchet & Clank level. Level have to be uncompressed."
-    bl_options={"REGISTER"}
+    bl_idname = "import_scene.eai"
+    bl_label = "Select this folder"
+    bl_description = "Extracts and imports assets from a Ratchet & Clank level. Level have to be uncompressed."
+    bl_options = {"REGISTER"}
 
     filename_ext = ".dat"
-    #filter_glob: bpy.props.StringProperty(
+    # filter_glob: bpy.props.StringProperty(
     #    default="*main.dat;*assetlookup.dat;*debug.dat",
     #    options={"HIDDEN"}
-    #)
+    # )
 
-    #directory: bpy.props.StringProperty(
+    # directory: bpy.props.StringProperty(
     #    name="Level Folder",
     #    description="Path to the uncompressed level folder. There should be .dat files inside.",
     #    subtype="DIR_PATH"
-    #)
+    # )
     directory: bpy.props.StringProperty()
     filter_glob: bpy.props.StringProperty(
         default="*.dat",
@@ -181,14 +156,24 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     use_mobys: bpy.props.BoolProperty(
         name="Import Mobys",
         description="Wether mobys should be imported or not. Pretty useful to have a clean map.",
-        default=True
+        default=False
     )
     use_shrubs: bpy.props.BoolProperty(
         name="Import Shrubs",
         description="Wether shrubs should be imported or not. If it is enabled, the map can be heavy.",
         default=True
     )
-    
+    use_ties: bpy.props.BoolProperty(
+        name="Import Ties",
+        description="Wether the base terrain should be imported or not. If unsure, do not uncheck.",
+        default=True
+    )
+    use_ufrags: bpy.props.BoolProperty(
+        name="Import UFrags",
+        description="Wether UFrags should be imported or not. UFrags are globally all the tesselated terrain. If unsure, do not change.",
+        default=True
+    )
+
     def draw(self, context):
         pass
 
@@ -196,11 +181,12 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         extract_and_import(self, context)
         return {"FINISHED"}
 
+
 class EAI_PT_import_include(bpy.types.Panel):
-    bl_space_type="FILE_BROWSER"
-    bl_region_type="TOOL_PROPS"
-    bl_label="Include"
-    bl_parent_id="FILE_PT_operator"
+    bl_space_type = "FILE_BROWSER"
+    bl_region_type = "TOOL_PROPS"
+    bl_label = "Include"
+    bl_parent_id = "FILE_PT_operator"
 
     @classmethod
     def poll(cls, context):
@@ -220,12 +206,15 @@ class EAI_PT_import_include(bpy.types.Panel):
 
         layout.prop(operator, 'use_mobys')
         layout.prop(operator, 'use_shrubs')
+        layout.prop(operator, 'use_ties')
+        layout.prop(operator, 'use_ufrags')
+
 
 class EAI_PT_import_settings(bpy.types.Panel):
-    bl_space_type="FILE_BROWSER"
-    bl_region_type="TOOL_PROPS"
-    bl_label="Settings"
-    bl_parent_id="FILE_PT_operator"
+    bl_space_type = "FILE_BROWSER"
+    bl_region_type = "TOOL_PROPS"
+    bl_label = "Settings"
+    bl_parent_id = "FILE_PT_operator"
 
     @classmethod
     def poll(cls, context):
@@ -233,23 +222,24 @@ class EAI_PT_import_settings(bpy.types.Panel):
         operator = sfile.active_operator
 
         return operator.bl_idname == "IMPORT_SCENE_OT_eai"
-    
+
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split=True
-        layout.use_property_decorate=False
+        layout.use_property_split = True
+        layout.use_property_decorate = False
 
-        sfile=context.space_data
-        operator=sfile.active_operator
+        sfile = context.space_data
+        operator = sfile.active_operator
+
 
 ########################################
 ########## END OF THE CLASSES ##########
 ########################################
 
 
-
 def menu_func_import(self, context):
     self.layout.operator(ExtractAndImport.bl_idname, text="Extract & Import RAC Level (level folder)")
+
 
 classes = [
     ExtractAndImport,
@@ -257,16 +247,18 @@ classes = [
     EAI_PT_import_settings,
 ]
 
+
 def register():
     auto_load.register()
     for cls in classes:
         bpy.utils.register_class(cls)
-    
+
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
+
 
 def unregister():
     auto_load.unregister()
     for cls in classes:
         bpy.utils.unregister_class(cls)
-    
+
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
