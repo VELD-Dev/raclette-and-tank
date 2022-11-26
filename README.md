@@ -30,7 +30,7 @@ Press `Extract & Import RAC Assets (level folder)`.
 
 ### Step 4
 In the browser, search for `main.dat` or `assetlookup.dat` (depending on which game you want to export models)  
-Check or uncheck options depending what you want to export and have on Blender. You can always import previously non-imported elements to the scene by redoing the [Step 3](#Step_3). Do not forget to uncheck what you already imported to avoid duplicates.
+Check or uncheck options depending what you want to export and have on Blender. You can always import previously non-imported elements to the scene by redoing the [Step 3](#user-content-step-3). Do not forget to uncheck what you already imported to avoid duplicates.
 
 ### Additional info
 Each category of model (mobys, ties, shrubs, etc...) are splitted to different Collections.
