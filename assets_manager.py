@@ -1,5 +1,3 @@
-import bpy
-import bpy_extras
 import io
 import struct
 import os
@@ -7,7 +5,7 @@ import os.path
 import typing
 import enum
 from . import (file_manager, mobys, ties)
-from .types import (SectionIDTypeEnum, MobyIDTypeEnum)
+from .types import (SectionIDTypeEnum, MobyIDTypeEnum, IGHeader)
 
 
 class AssetManager:
@@ -38,23 +36,8 @@ class AssetManager:
                     self.LoadTies()
                     ties_refs = self.ties
                     for tie_ref in ties_refs:
-                        stream.seek(tie_ref['offset'])
-                        print('----')
-                        print("TIE {0}".format(tie_ref['tuid']))
-                        subigfile_header: IGHeader = IGHeader()
-                        magic1, magic2, count, length = struct.unpack('>4I', stream.read(0x10))
-
-                        subigfile_header.magic1 = magic1
-                        subigfile_header.magic2 = magic2
-                        subigfile_header.chunks_count = count
-                        subigfile_header.length = length
-
-                        relative_offset = tie_ref['offset'] + 0x20
-                        all_ties: list[ties.CTie] = list[ties.CTie]()
-                        for i in range(subigfile_header.chunks_count):
-                            print(hex(relative_offset))
-                            all_ties.append(ties.CTie(relative_offset, stream))
-                            relative_offset = relative_offset + 0x80
+                        print("----")
+                        ties.TieRefReader(stream, tie_ref)
 
                 '''
                 if igfile == "mobys.dat" and operator.use_mobys == True:
@@ -121,13 +104,6 @@ class IGHWHeaders:
         self.result.magic2 = magic2
         self.result.chunks_count = count
         self.result.length = length
-
-
-class IGHeader(dict):
-    magic1: int
-    magic2: int
-    chunks_count: int
-    length: int
 
 
 class IGHWSectionsChunks:

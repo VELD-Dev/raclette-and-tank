@@ -19,6 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import bpy
+import bpy_extras
+
 
 bl_info = {
     "name": "raclette-and-tank-importer",
@@ -38,14 +41,6 @@ bl_info = {
 from . import auto_load
 
 auto_load.init()
-
-import bpy
-import bpy_extras
-import os
-import os.path
-import io
-import struct
-import enum
 
 if 'bpy' in locals():
     import importlib
@@ -124,6 +119,7 @@ def extract_and_import(operator, context):
                     offset.append(int(soffset))
                     length.append(int(slength))
 '''
+
 
 ##############################################
 ########## EXTRACT AND IMPORT CLASS ##########

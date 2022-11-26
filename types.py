@@ -12,3 +12,10 @@ class MobyIDTypeEnum(enum.Enum):
 class SectionIDTypeEnum(enum.Enum):
     MOBYS = 0x1D600
     TIES = 0x1D300
+
+
+class IGHeader(dict):
+    magic1: int
+    magic2: int
+    chunks_count: int
+    length: int

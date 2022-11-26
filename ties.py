@@ -1,6 +1,9 @@
-import bpy
+import typing
+
 import io
 import struct
+
+from . import types
 
 
 def read_tie(offset: int, stream: io.BufferedReader):
@@ -36,6 +39,46 @@ def read_tie_mesh(offset: int, stream: io.BufferedReader):
     return res
 
 
+def read_ighw_header(stream: io.BufferedReader):
+    res: types.IGHeader = types.IGHeader()
+    magic1, magic2, count, length = struct.unpack('>4I', stream.read(0x10))
+    res.magic1 = magic1
+    res.magic2 = magic2
+    res.chunks_count = count
+    res.length = length
+    return res
+
+
+def read_ighw_chunks(stream: io.BufferedReader, headers: types.IGHeader, base_offset: int):
+    for i in range(headers.chunks_count):
+        cid, offset, length, count = struct.unpack('>4I', stream.read(0x10))
+        yield {
+            'id': cid,
+            'offset': offset,
+            'count': count,
+            'length': length,
+            'this_offset': base_offset
+        }
+        base_offset = base_offset + 0x10
+
+
+class TieRefReader:
+    def __init__(self, stream: io.BufferedReader, tie_ref: dict[str, int]):
+        stream.seek(tie_ref["offset"])
+        self.ighw_headers: types.IGHeader = read_ighw_header(stream)
+        stream.seek(tie_ref['offset'] + 0x20)
+        self.ighw_chunks: typing.Generator[dict[str, int]] = read_ighw_chunks(
+            stream,
+            self.ighw_headers,
+            tie_ref['offset'] + 0x20
+        )
+        for chunk in self.ighw_chunks:
+            print("TIE_CHUNK {0} {1}: {2}".format(hex(tie_ref['tuid']), hex(chunk['id']), chunk))
+            if chunk['id'] != 0x3400:
+                continue
+            tie = list[CTie]().append(CTie(chunk['this_offset'], stream))
+
+
 class CTie:
     def __init__(self, base_offset: int, stream: io.BufferedReader):
         tie = read_tie(base_offset, stream)
@@ -48,12 +91,13 @@ class CTie:
             tie_mesh_offset = tie_mesh_offset + 0x40
         self.tie = tie
         self.tie_meshes = tie_meshes
+        print("TIE {0}: {1}".format(hex(self.tie.tuid), self.tie.__dict__))
 
 
 class Tie(dict):
     """0x80 bytes long"""
     meshes_offset: int
-    #meshes_count: int
+    # meshes_count: int
     metadata_count: int
     vertex_buffer_start: int
     vertex_buffer_size: int
