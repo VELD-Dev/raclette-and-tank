@@ -20,17 +20,33 @@ Go to `USRDIR > packed > levels > LEVEL_NAME`, use PSArcTool or PS3GameExtractor
 
 ### Step 2
 Open Blender.  
-Click `Edit` in the topbar, then `⚙ Preferences`.  
+Click `Edit` in the topbar, then `⚙ Preferences`.
 Go to `Add-ons` category, and search for `Raclette and Tank Importer` (it is in `Reverse-Engineering` category)  
 Click the check mark to enable the plugin.
 
 ### Step 3
 Click `File` in the topbar, then `📥 Import`.  
-Press `Extract & Import RAC Assets (level folder)`.
+  
+![Click file](.gitresources/open_files.png)  
+  
+![Click Import](.gitresources/click_import.png)  
+  
+Press `Extract & Import RAC Assets (level folder)`.  
+  
+![Select E&IRACALF](.gitresources/click_extract_rac_level.png)  
+  
 
 ### Step 4
-In the browser, search for `main.dat` or `assetlookup.dat` (depending on which game you want to export models)  
-Check or uncheck options depending what you want to export and have on Blender. You can always import previously non-imported elements to the scene by redoing the [Step 3](#user-content-step-3). Do not forget to uncheck what you already imported to avoid duplicates.
+In the browser, search for your folder `USRDIR > packed > levels > LEVEL_NAME > built > levels > LEVEL_NAME` (depending on which game you want to export models)  
+  
+![Browse LEVEL](.gitresources/find_level_folder.png)  
+  
+Check or uncheck options depending what you want to export and have on Blender. You can always import previously non-imported elements to the scene by redoing the [Step 3](#user-content-step-3). Do not forget to uncheck what you already imported to avoid duplicates.  
+  
+![Play with settings](.gitresources/settings_overview.png)  
+  
+![Select the folder](.gitresources/select%20the%20folder.png)  
+  
 
 ### Additional info
 Each category of model (mobys, ties, shrubs, etc...) are splitted to different Collections.
