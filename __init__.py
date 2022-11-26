@@ -53,10 +53,12 @@ if 'bpy' in locals():
     importlib.reload(file_manager)
     importlib.reload(assets_manager)
     importlib.reload(mobys)
+    importlib.reload(types)
 else:
     from . import file_manager
     from . import assets_manager
     from . import mobys
+    from . import types
 
 
 
