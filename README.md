@@ -80,9 +80,6 @@ Importation settings of levels
 | `Boolean` |    ❌    |     ❌     |       Zones        | Wether every mesh supported by zones should be put into its zone<br/>Creating subfolders in Blender.                          |
 | `Boolean` |    ✅    |     ❌     | Create Collections | Wether a creation should be created for each mesh type (Mobys,<br/>Ties, Shrubs, UFrags) or everything should be put at root. |
 
-## Definitions
-Definitions.
-
 [^1]: It's basically the greatest part of the terrain and walkable parts of maps.
 
 [^2]: All the entities, so bolts, enemies, destructibles, crates, moving platforms, etc...
