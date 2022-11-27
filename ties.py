@@ -7,29 +7,45 @@ from . import types
 from .stream_helper import (StreamHelper, open_helper)
 
 
-def read_tie(stream: StreamHelper):
-    res: Tie = Tie()
+def read_tie(stream: StreamHelper, subfile_offset: int) -> types.Tie:
+    res: types.Tie = types.Tie()
     res.meshes_offset = stream.readUInt(0x00)
     res.metadata_count = stream.readUByte(0x0F)
     res.vertex_buffer_start = stream.readUInt(0x14)
     res.vertex_buffer_size = stream.readUInt(0x18)
-    res.scale = stream.readVector3(0x20)
-    res.name_offset = stream.readUInt(0x64)
+    res.scale = stream.readVector3Float(0x20)
+    name_offset = stream.readUInt(0x64)
     res.tuid = stream.readULong(0x68)
-    print("o:{0} TIE {1}: {2}".format(hex(stream.offset), hex(res.tuid), res.__dict__))
+
+    # Read name
+    # previous_offset = stream.offset
+    # stream.seek(subfile_offset + name_offset)
+    # res.name = stream.readString()
+    # stream.seek(previous_offset)
+    # print("o:{0} TIE {1}: {2}".format(hex(stream.offset), hex(res.tuid), res.__dict__))
     return res
 
 
 def read_tie_mesh(stream: StreamHelper):
-    res: TieMesh = TieMesh()
+    res: types.TieMesh = types.TieMesh()
     res.indexIndex = stream.readUInt(0x00)
     res.vertexIndex = stream.readUShort(0x04)
     res.vertexCount = stream.readUShort(0x08)
     res.indexCount = stream.readUShort(0x12)
     res.oldShaderIndex = stream.readUShort(0x28)
     res.newShaderIndex = stream.readUByte(0x2A)
-    print("o:{0} TIE_MESH {1}: {2}".format(hex(stream.offset), res.indexIndex, res.__dict__))
+    # print("o:{0} TIE_MESH {1}: {2}".format(hex(stream.offset), res.indexIndex, res.__dict__))
     return res
+
+
+'''
+def read_vertex(stream: StreamHelper, tie: CTie):
+    res: types.MeshVertex = types.MeshVertex()
+    res.location = stream.readVector3Short(0x00)
+    res.UVs = (stream.readFloat16(0x08), stream.readFloat16(0x0A))
+    print("o:{0} VERTEX (TUID:{1}): {2}".format(hex(stream.offset), hex(tuid), res.__dict__))
+    return res
+'''
 
 
 def read_ighw_header(stream: StreamHelper):
@@ -52,29 +68,62 @@ def read_ighw_chunks(stream: StreamHelper, headers: types.IGHeader):
         yield ighw_chunk
 
 
+def query_section(section_id: int, chunks: list[types.IGSectionChunk]):
+    if section_id in types.TieSectionIDTypeEnum._value2member_map_:
+        for section in chunks:
+            if section.id == section_id:
+                return section
+
+
 class TieRefReader:
     def __init__(self, stream: StreamHelper, tie_ref: types.IGAssetRef):
         stream.seek(tie_ref.offset)
         self.ighw_headers: types.IGHeader = read_ighw_header(stream)
         stream.jump(0x20)
-        self.ighw_chunks: typing.Generator[types.IGSectionChunk] = read_ighw_chunks(stream, self.ighw_headers)
-        for chunk in self.ighw_chunks:
-            if chunk.id != 0x3400:
-                continue
-            print("o:{3} TIE_CHUNK {0} {1}: {2}".format(hex(tie_ref.tuid), hex(chunk.id), chunk.__dict__, hex(stream.offset)))
-            ties = list[CTie]()
-            stream.seek(chunk.offset + tie_ref.offset)
-            for i in range(chunk.count):
-                ties.append(CTie(stream))
-                stream.jump(0x80)
-            print(ties)
+        self.ighw_chunks: list[types.IGSectionChunk] = list(read_ighw_chunks(stream, self.ighw_headers))
+        vertices = list[list[types.MeshVertex]]()
+        indices = []
+
+        # READ TIES
+        chunk = query_section(0x3400, self.ighw_chunks)
+        # print("o:{3} TIE_CHUNK {0} {1}: {2}".format(hex(tie_ref.tuid), hex(chunk.id), chunk.__dict__, hex(stream.offset)))
+        stream.seek(chunk.offset + tie_ref.offset)
+        self.tie: CTie = CTie(stream, tie_ref)
+        # print(self.tie.__str__())
+
+        # READ VERTICES
+        chunk = query_section(0x3000, self.ighw_chunks)
+        stream.seek(chunk.offset + tie_ref.offset)
+        for tie_mesh in self.tie.tie_meshes:
+            mesh_vertices = list[types.MeshVertex]()
+            for i in range(tie_mesh.vertexCount):
+                mesh_vertices.append(self.tie.read_vertex(stream))
+
+                stream.jump(0x14)
+            vertices.append(mesh_vertices)
+        self.vertices = vertices
+
+        # READ INDICES
+        chunk = query_section(0x3200, self.ighw_chunks)
+        stream.seek(chunk.offset + tie_ref.offset)
+        for tie_mesh in self.tie.tie_meshes:
+            mesh_indices = []
+            for i in range(tie_mesh.indexCount // 3):
+                indices.append(read_indices(stream))
+                stream.jump(0x06)
+        self.indices = indices
+
+
+def read_indices(stream: StreamHelper):
+    indice: tuple[int, int, int] = (stream.readUShort(0x00), stream.readUShort(0x02), stream.readUShort(0x04))
+    return indice
 
 
 class CTie:
-    def __init__(self, stream: StreamHelper):
-        tie = read_tie(stream)
-        tie_meshes: list[TieMesh] = list[TieMesh]()
-        stream.jump(tie.meshes_offset)
+    def __init__(self, stream: StreamHelper, tie_ref: types.IGAssetRef):
+        tie = read_tie(stream, stream.offset)
+        tie_meshes: list[types.TieMesh] = list[types.TieMesh]()
+        stream.seek(tie_ref.offset + tie.meshes_offset)
         for i in range(tie.metadata_count):
             tie_mesh = read_tie_mesh(stream)
             tie_meshes.append(tie_mesh)
@@ -82,24 +131,11 @@ class CTie:
         self.tie = tie
         self.tie_meshes = tie_meshes
 
-
-class Tie(dict):
-    """0x80 bytes long"""
-    meshes_offset: int
-    # meshes_count: int
-    metadata_count: int
-    vertex_buffer_start: int
-    vertex_buffer_size: int
-    scale: (float, float, float)
-    name_offset: int
-    tuid: int
-
-
-class TieMesh(dict):
-    """0x40 bytes long"""
-    indexIndex: int
-    vertexIndex: int
-    vertexCount: int
-    indexCount: int
-    oldShaderIndex: int
-    newShaderIndex: int
+    def read_vertex(self, stream: StreamHelper):
+        res: types.MeshVertex = types.MeshVertex()
+        x, y, z = stream.readVector3Short(0x00)
+        sx, sy, sz = self.tie.scale
+        res.location = (x * sx, y * sy, z * sz)
+        res.UVs = (stream.readFloat16(0x08), stream.readFloat16(0x0A))
+        # print("o:{0} VERTEX (TUID:{1}): {2}".format(hex(stream.offset), hex(self.tie.tuid), res.__dict__))
+        return res

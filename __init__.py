@@ -77,7 +77,31 @@ def extract_and_import(operator, context):
     dirname = operator.directory
     print(dirname)
     filemanager = file_manager.FileManager(dirname)
-    assets_manager.AssetManager(filemanager, operator)
+    assetmanager = assets_manager.AssetManager(filemanager, operator)
+    if operator.use_ties:
+        ties_collection = bpy.data.collections.new("Ties")
+        bpy.context.scene.collection.children.link(ties_collection)
+        ties_objects = list[tuple[object, list]]()
+        meshdata = object()
+        meshobj = object()
+        for tie in assetmanager.ties:
+            for mesh_idx, mesh in enumerate(tie.tie.tie_meshes):
+                verts = list[tuple[float, float, float]]()
+                faces = []
+                edges = []  # Ignore
+                for vertex in tie.vertices:
+                    for vert in vertex:
+                        verts.append(vert.__loctuple__())
+                print(tie.indices)
+                for indices in tie.indices:
+                    print(indices)
+                    faces.append(indices)
+                meshdata = bpy.data.meshes.new("TieMesh_{0}_{1}".format(str(tie.tie.tie.tuid)[:4], mesh_idx))
+                meshdata.from_pydata(verts, faces, edges)
+            meshobj = bpy.data.objects.new("Tie_{0}".format(str(tie.tie.tie.tuid)[:4]), meshdata)
+            ties_collection.objects.link(meshobj)
+
+
 
 
 '''
@@ -170,6 +194,27 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         default=True
     )
 
+    put_in_collections: bpy.props.BoolProperty(
+        name="Create Collections",
+        description="Wether a creation should be created for each mesh type (Mobys, Ties, Shrubs, UFrags) or everything should be put at root.",
+        default=True
+    )
+    use_textures: bpy.props.BoolProperty(
+        name="Textures",
+        description="Wether textures should be extracted, imported and applied or not.",
+        default=True
+    )
+    use_lightning: bpy.props.BoolProperty(
+        name="Lightning",
+        description="Wether light points should be extracted and imported or not.",
+        default=False
+    )
+    use_zones: bpy.props.BoolProperty(
+        name="Zones",
+        description="Wether every mesh supported by zones should be put into its zone. Creating subfolders in Collection.",
+        default=False
+    )
+
     def draw(self, context):
         pass
 
@@ -226,6 +271,11 @@ class EAI_PT_import_settings(bpy.types.Panel):
 
         sfile = context.space_data
         operator = sfile.active_operator
+
+        layout.prop(operator, 'use_textures')
+        layout.prop(operator, 'use_lightning')
+        layout.prop(operator, 'use_zones')
+        layout.prop(operator, 'put_in_collections')
 
 
 ########################################

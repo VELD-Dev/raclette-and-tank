@@ -43,38 +43,66 @@ class StreamHelper:
         self.__stream.seek(self.offset)
         return res
 
-    def readUInt(self, __relative_offset: int = None):
+    def readUInt(self, __relative_offset: int = None) -> int:
         if __relative_offset is not None:
             return struct.unpack('>I', self.peek(0x04, __relative_offset))[0]
         else:
             return struct.unpack('>I', self.peek(0x04))[0]
 
-    def readUShort(self, __relative_offset: int = None):
+    def readUShort(self, __relative_offset: int = None) -> int:
         if __relative_offset is not None:
             return struct.unpack('>H', self.peek(0x02, __relative_offset))[0]
         else:
             return struct.unpack('>H', self.peek(0x02))[0]
 
-    def readULong(self, __relative_offset: int = None):
+    def readULong(self, __relative_offset: int = None) -> int:
         if __relative_offset is not None:
             return struct.unpack('>Q', self.peek(0x08, __relative_offset))[0]
         else:
             return struct.unpack('>Q', self.peek(0x08))[0]
 
-    def readFloat(self, __relative_offset: int = None):
+    def readFloat32(self, __relative_offset: int = None) -> float:
         if __relative_offset is not None:
             return struct.unpack('>f', self.peek(0x04, __relative_offset))[0]
         else:
             return struct.unpack('>f', self.peek(0x04))[0]
 
-    def readVector3(self, __relative_offset: int = None):
+    def readFloat16(self, __relative_offset: int = None) -> float:
+        if __relative_offset is not None:
+            return struct.unpack('>e', self.peek(0x02, __relative_offset))[0]
+        else:
+            return struct.unpack('>e', self.peek(0x02))[0]
+
+    def readVector3Float(self, __relative_offset: int = None) -> tuple[float, float, float]:
         if __relative_offset is not None:
             return struct.unpack('>3f', self.peek(0x0C, __relative_offset))
         else:
             return struct.unpack('>3f', self.peek(0x0C))
 
-    def readUByte(self, __relative_offset: int = None):
+    def readVector3Short(self, __relative_offset: int = None) -> tuple[int, int, int]:
+        if __relative_offset is not None:
+            return struct.unpack('>3h', self.peek(0x06, __relative_offset))
+        else:
+            return struct.unpack('>3h', self.peek(0x06))
+
+    def readUByte(self, __relative_offset: int = None) -> bytes:
         if __relative_offset is not None:
             return struct.unpack('>B', self.peek(0x01, __relative_offset))[0]
         else:
             return struct.unpack('>B', self.peek(0x01))[0]
+
+    def readString(self, __relative_offset: int = None) -> str:
+        if __relative_offset is not None:
+            relative_position = int()
+            string = str()
+            while self.peek(0x01, __relative_offset + relative_position) != b'\x00':
+                string += self.peek(0x01, __relative_offset + relative_position).decode()
+                relative_position += 0x01
+            return string
+        else:
+            relative_position = int()
+            string = str()
+            while self.peek(0x01, relative_position) != b'\x00':
+                string += self.peek(0x01, relative_position).decode()
+                relative_position += 1
+            return string

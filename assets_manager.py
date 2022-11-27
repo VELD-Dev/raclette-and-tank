@@ -14,7 +14,7 @@ class AssetManager:
         isOld = fm.isIE2
         self.fm: file_manager.FileManager = fm
         self.mobys: list[IGAssetRef] = list[IGAssetRef]()
-        self.ties: list[IGAssetRef] = list[IGAssetRef]()
+        self.ties_refs: list[IGAssetRef] = list[IGAssetRef]()
         if isOld is False:
             print("AssetManager: Is Not Old!")
             print(fm.igfiles)
@@ -36,10 +36,11 @@ class AssetManager:
                 print("----\nAM-OTHER_IGFILE {0}: {1}".format(igfile, headers.__dict__))
                 if igfile == "ties.dat" and operator.use_ties:
                     self.LoadTies()
-                    ties_refs = self.ties
-                    for tie_ref in ties_refs:
-                        print("----")
-                        ties.TieRefReader(stream, tie_ref)
+                    self.ties = list()
+                    for tie_ref in self.ties_refs:
+                        # print("----")
+                        tie = ties.TieRefReader(stream, tie_ref)
+                        self.ties.append(tie)
 
                 '''
                 if igfile == "mobys.dat" and operator.use_mobys == True:
@@ -62,15 +63,15 @@ class AssetManager:
         assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
         tieSection = query_section(self.sections, 0x1D300)
         assetlookup.seek(tieSection.offset)
-        self.ties = list[IGAssetRef]()
+        self.ties_refs = list[IGAssetRef]()
         for i in range(int(tieSection.length / 0x10)):
             asset_ref = IGAssetRef()
             asset_ref.tuid = assetlookup.readULong(0x00)
             asset_ref.offset = assetlookup.readUInt(0x08)
             asset_ref.length = assetlookup.readUInt(0x0C)
-            print("o:{2} TIE_RAW-REF {0}: {1}".format(hex(asset_ref.tuid), asset_ref.__dict__, hex(assetlookup.offset)))
-
-            self.ties.append(asset_ref)
+            # print("o:{2} TIE_RAW-REF {0}: {1}".format(hex(asset_ref.tuid), asset_ref.__dict__, hex(assetlookup.offset)))
+            assetlookup.jump(0x10)
+            self.ties_refs.append(asset_ref)
 
     def LoadMobys(self):
         if self.fm.isIE2:
@@ -82,17 +83,16 @@ class AssetManager:
     def LoadNewMobys(self):
         assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
         mobySection = query_section(self.sections, 0x1D600)
-        print("o:{2} / MOBY_SECTION {0}: {1}".format(hex(mobySection["id"]), mobySection, hex(assetlookup.offset)))
-        assetlookup.seek(mobySection["offset"])
+        print("o:{2} / MOBY_SECTION {0}: {1}".format(hex(mobySection.id), mobySection, hex(assetlookup.offset)))
+        assetlookup.seek(mobySection.offset)
 
         for i in range(int(mobySection["length"] / 0x10)):
-            tuid, offset, length = struct.unpack('>Q2I', assetlookup.read(0x10))
-            res = {
-                'tuid': tuid,
-                'offset': offset,
-                'length': length
-            }
-            print("o:{2} MOBY_RAW-REF {0}: {1}".format(hex(tuid), res, hex(assetlookup.offset)))
+            res: IGAssetRef = IGAssetRef()
+            res.tuid = assetlookup.readULong(0x00)
+            res.offset = assetlookup.readUInt(0x08)
+            res.length = assetlookup.readUInt(0x0C)
+            assetlookup.jump(0x10)
+            print("o:{2} MOBY_RAW-REF {0}: {1}".format(hex(res.tuid), res.__dict__, hex(assetlookup.offset)))
             self.mobys.append(res)
 
 
@@ -113,7 +113,7 @@ def read_sections_chunks(headers: IGHeader, stream: StreamHelper):
         sectionChunk.offset = stream.readUInt(0x04)
         sectionChunk.count = stream.readUInt(0x08)
         sectionChunk.length = stream.readUInt(0x0C)
-        print("o:{2} IGHW_SectHeader {0}: {1}".format(hex(sectionChunk.id), sectionChunk.__dict__, hex(stream.offset)))
+        # print("o:{2} IGHW_SectHeader {0}: {1}".format(hex(sectionChunk.id), sectionChunk.__dict__, hex(stream.offset)))
         stream.jump(0x10)
         yield sectionChunk
 

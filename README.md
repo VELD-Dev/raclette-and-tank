@@ -40,7 +40,7 @@ Click `File` in the topbar, then `📥 Import`.
   
 ![Click Import](.gitresources/click_import.png)  
   
-Press `Extract & Import RAC Assets (level folder)`.  
+Press `Extract & Import RAC Level (level folder)`.  
   
 ![Select E&IRACALF](.gitresources/click_extract_rac_level.png)  
   
