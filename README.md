@@ -3,14 +3,14 @@ Raclette And Tank Importer (RATI lol) is a Blender plugin that exports a map of 
 
 ## SUPPORTED GAMES
 List of the supported games (theorically):
-- Ratchet & Clank: Tools of Destruction
-- Ratchet & Clank: Quest For Booty
-- Ratchet & Clank: A Crack In Time
-- Ratchet & Clank: Full Frontal Assault (PS3 Version)
-- Ratchet & Clank: All 4 One
-- Ratchet & Clank: Into The Nexus
-- Resistance 2
-- Resistance 3
+- [ ] Ratchet & Clank: Tools of Destruction
+- [ ] Ratchet & Clank: Quest For Booty
+- [x] Ratchet & Clank: A Crack In Time
+- [x] Ratchet & Clank: Full Frontal Assault (PS3 Version)
+- [x] Ratchet & Clank: All 4 One
+- [x] Ratchet & Clank: Into The Nexus
+- [x] Resistance 2
+- [x] Resistance 3
 
 ## How to use ?
 ### Step 1
