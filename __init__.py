@@ -92,12 +92,12 @@ def extract_and_import(operator, context):
                 for vertex in tie.vertices:
                     for vert in vertex:
                         verts.append(vert.__loctuple__())
-                print(tie.indices)
                 for indices in tie.indices:
-                    print(indices)
-                    faces.append(indices)
+                    for mesh_indices in tie.indices:
+                        for index in mesh_indices:
+                            faces.append(index)
                 meshdata = bpy.data.meshes.new("TieMesh_{0}_{1}".format(str(tie.tie.tie.tuid)[:4], mesh_idx))
-                meshdata.from_pydata(verts, faces, edges)
+                meshdata.from_pydata(verts, edges, faces)
             meshobj = bpy.data.objects.new("Tie_{0}".format(str(tie.tie.tie.tuid)[:4]), meshdata)
             ties_collection.objects.link(meshobj)
 

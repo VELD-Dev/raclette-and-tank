@@ -109,8 +109,9 @@ class TieRefReader:
         for tie_mesh in self.tie.tie_meshes:
             mesh_indices = []
             for i in range(tie_mesh.indexCount // 3):
-                indices.append(read_indices(stream))
+                mesh_indices.append(read_indices(stream))
                 stream.jump(0x06)
+            indices.append(mesh_indices)
         self.indices = indices
 
 
