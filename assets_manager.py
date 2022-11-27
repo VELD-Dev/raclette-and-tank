@@ -1,11 +1,11 @@
-import io
 import struct
-import os
-import os.path
 import typing
 import enum
+
+import types
 from . import (file_manager, mobys, ties)
-from .types import (SectionIDTypeEnum, MobyIDTypeEnum, IGHeader)
+from .stream_helper import (StreamHelper, open_helper)
+from .types import (SectionIDTypeEnum, MobyIDTypeEnum, IGHeader, IGAssetRef, IGSectionChunk)
 
 
 class AssetManager:
@@ -13,24 +13,26 @@ class AssetManager:
         print("AssetManager: INIT")
         isOld = fm.isIE2
         self.fm: file_manager.FileManager = fm
-        self.mobys: list[dict[str, int]] = list[dict[str, int]]()
-        self.ties: list[dict[str, int]] = list[dict[str, int]]()
+        self.mobys: list[IGAssetRef] = list[IGAssetRef]()
+        self.ties: list[IGAssetRef] = list[IGAssetRef]()
         if isOld is False:
             print("AssetManager: Is Not Old!")
             print(fm.igfiles)
             for idx, igfile in enumerate(fm.igfiles):
                 stream = fm.igfiles[igfile]
-                headers = IGHWHeaders(stream).result
+                stream.seek(0x00)
+                headers = read_ighw_header(stream)
                 print("----\nIGFILE {0}: {1}".format(igfile, headers.__dict__))
                 if igfile == "assetlookup.dat":
-                    sections_chunks = IGHWSectionsChunks(headers, stream)
-                    self.sections: IGHWSectionsChunks = sections_chunks
-                    for section_chunk in sections_chunks.result:
-                        print("IGCHNK {0}: {1}".format(hex(section_chunk["id"]), section_chunk))
+                    sections_chunks = read_sections_chunks(headers, stream)
+                    self.sections: list[IGSectionChunk] = list[IGSectionChunk]()
+                    for section_chunk in sections_chunks:
+                        self.sections.append(section_chunk)
+                        print("o:{2} IGCHNK {0}: {1}".format(hex(section_chunk.id), section_chunk, stream.offset))
 
             for idx, igfile in enumerate(fm.otherfiles):
                 stream = fm.otherfiles[igfile]
-                headers = IGHWHeaders(stream).result
+                headers = read_ighw_header(stream)
                 print("----\nAM-OTHER_IGFILE {0}: {1}".format(igfile, headers.__dict__))
                 if igfile == "ties.dat" and operator.use_ties:
                     self.LoadTies()
@@ -57,19 +59,18 @@ class AssetManager:
             self.LoadNewTies()
 
     def LoadNewTies(self):
-        assetlookup: io.BufferedReader = self.fm.igfiles["assetlookup.dat"]
-        tieSection = self.sections.query_section(0x1D300)
-        assetlookup.seek(tieSection["offset"])
-        for i in range(tieSection["count"]):
-            tuid, offset, length = struct.unpack('>Q2I', assetlookup.read(0x10))
-            res = {
-                'tuid': tuid,
-                'offset': offset,
-                'length': length
-            }
-            print("TIE_RAW-REF {0}: {1}".format(hex(tuid), res))
+        assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
+        tieSection = query_section(self.sections, 0x1D300)
+        assetlookup.seek(tieSection.offset)
+        self.ties = list[IGAssetRef]()
+        for i in range(int(tieSection.length / 0x10)):
+            asset_ref = IGAssetRef()
+            asset_ref.tuid = assetlookup.readULong(0x00)
+            asset_ref.offset = assetlookup.readUInt(0x08)
+            asset_ref.length = assetlookup.readUInt(0x0C)
+            print("o:{2} TIE_RAW-REF {0}: {1}".format(hex(asset_ref.tuid), asset_ref.__dict__, hex(assetlookup.offset)))
 
-            self.ties.append(res)
+            self.ties.append(asset_ref)
 
     def LoadMobys(self):
         if self.fm.isIE2:
@@ -79,9 +80,9 @@ class AssetManager:
             self.LoadNewMobys()
 
     def LoadNewMobys(self):
-        assetlookup: io.BufferedReader = self.fm.igfiles["assetlookup.dat"]
-        mobySection = self.sections.query_section(0x1D600)
-        print("MOBY_SECTION {0}: {1}".format(hex(mobySection["id"]), mobySection))
+        assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
+        mobySection = query_section(self.sections, 0x1D600)
+        print("o:{2} / MOBY_SECTION {0}: {1}".format(hex(mobySection["id"]), mobySection, hex(assetlookup.offset)))
         assetlookup.seek(mobySection["offset"])
 
         for i in range(int(mobySection["length"] / 0x10)):
@@ -91,36 +92,34 @@ class AssetManager:
                 'offset': offset,
                 'length': length
             }
-            print("MOBY_RAW-REF {0}: {1}".format(hex(tuid), res))
+            print("o:{2} MOBY_RAW-REF {0}: {1}".format(hex(tuid), res, hex(assetlookup.offset)))
             self.mobys.append(res)
 
 
-class IGHWHeaders:
-    def __init__(self, stream: io.BufferedReader):
-        stream.seek(0x00)
-        magic1, magic2, count, length = struct.unpack('>4I', stream.read(0x10))
-        self.result: IGHeader = IGHeader()
-        self.result.magic1 = magic1
-        self.result.magic2 = magic2
-        self.result.chunks_count = count
-        self.result.length = length
+def read_ighw_header(stream: StreamHelper):
+    header: IGHeader = IGHeader()
+    header.magic1 = stream.readUInt(0x00)
+    header.magic2 = stream.readUInt(0x04)
+    header.chunks_count = stream.readUInt(0x08)
+    header.length = stream.readUInt(0x0C)
+    return header
 
 
-class IGHWSectionsChunks:
-    def __init__(self, headers: IGHeader, stream: io.BufferedReader):
-        stream.seek(0x20)  # 0x20 is the constant offset for IGHW files
-        self.result: list[dict] = list()
-        for i in range(int(headers.length / 0x10)):
-            cid, offset, count, length = struct.unpack('>4I', stream.read(0x10))
-            self.result.append({
-                "id": cid,
-                "offset": offset,
-                "count": count,
-                "length": length
-            })
+def read_sections_chunks(headers: IGHeader, stream: StreamHelper):
+    stream.seek(0x20)  # 0x20 is the constant offset for IGHW files
+    for i in range(int(headers.length / 0x10)):
+        sectionChunk: IGSectionChunk = IGSectionChunk()
+        sectionChunk.id = stream.readUInt(0x00)
+        sectionChunk.offset = stream.readUInt(0x04)
+        sectionChunk.count = stream.readUInt(0x08)
+        sectionChunk.length = stream.readUInt(0x0C)
+        print("o:{2} IGHW_SectHeader {0}: {1}".format(hex(sectionChunk.id), sectionChunk.__dict__, hex(stream.offset)))
+        stream.jump(0x10)
+        yield sectionChunk
 
-    def query_section(self, section_id: int):
-        if section_id in SectionIDTypeEnum._value2member_map_:
-            for section in self.result:
-                if section["id"] == section_id:
-                    return section
+
+def query_section(chunks: list[IGSectionChunk], section_id: int):
+    if section_id in SectionIDTypeEnum._value2member_map_:
+        for section in chunks:
+            if section.id == section_id:
+                return section

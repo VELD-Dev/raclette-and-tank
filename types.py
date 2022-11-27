@@ -19,3 +19,16 @@ class IGHeader(dict):
     magic2: int
     chunks_count: int
     length: int
+
+
+class IGSectionChunk(dict):
+    id: int
+    offset: int
+    count: int
+    length: int
+
+
+class IGAssetRef(dict):
+    tuid: int
+    offset: int
+    length: int

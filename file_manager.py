@@ -1,18 +1,20 @@
 import bpy
-import io
 import os
 import os.path
 import struct
 import bpy_extras
 from typing import (Any, NewType)
 
+from .stream_helper import (StreamHelper, open_helper)
+
+
 class FileManager:
 
     def __init__(self, folderpath: str):
         print("FileManager: INIT")
         self.folderpath = folderpath
-        self.igfiles: dict(io.BufferedReader) = dict()
-        self.otherfiles: dict(io.BufferedReader) = dict()
+        self.igfiles: dict[str, StreamHelper] = dict[str, StreamHelper]()
+        self.otherfiles: dict[str, StreamHelper] = dict[str, StreamHelper]()
         self.isIE2: bool = bool()
         self.loadfolder()
 
@@ -21,7 +23,7 @@ class FileManager:
         self.isIE2 = files.count("main.dat") > 0
 
         if self.isIE2 is True:
-            return # For now, we'll just ignore the IE 2.0 versions.
+            return  # For now, we'll just ignore the IE 2.0 versions.
             # Loads IGFiles
             self.loadfile("main.dat", True)
             self.loadfile("vertices.dat", True)
@@ -30,7 +32,7 @@ class FileManager:
                 self.loadfile("debug.dat", True)
             except IOError as err:
                 print(err.args)
-            
+
             # Load other files which are also IGFiles but are not "main"
             self.loadfile("textures.dat", False)
             self.loadfile("texstream.dat", False)
@@ -47,18 +49,17 @@ class FileManager:
             self.loadfile("highmips.dat", False)
             self.loadfile("shaders.dat", False)
             self.loadfile("zones.dat", False)
-            
 
     def loadfile(self, name: str, readAsIGFiles: bool):
-        if os.path.exists(os.path.join(self.folderpath, name)) == False:
-            raise IOError("FileManager: File {0} in folderpath {1} does not exist.".format(name, self.folderpath), name, self.folderpath)
-        
+        if not os.path.exists(os.path.join(self.folderpath, name)):
+            raise IOError("FileManager: File {0} in folderpath {1} does not exist.".format(name, self.folderpath), name,
+                          self.folderpath)
+
         stream = open(os.path.join(self.folderpath, name), 'rb')
 
         if readAsIGFiles is True:
-            stream.seek(0x00) # Set position to 0 in the buffer
-            self.igfiles[name] = stream
+            stream.seek(0x00)  # Set position to 0 in the buffer
+            self.igfiles[name] = open_helper(stream)
         else:
-            stream.seek(0x00) # Set position to 0 in the buffer
-            self.otherfiles[name] = stream
-
+            stream.seek(0x00)  # Set position to 0 in the buffer
+            self.otherfiles[name] = open_helper(stream)

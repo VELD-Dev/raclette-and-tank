@@ -4,94 +4,83 @@ import io
 import struct
 
 from . import types
+from .stream_helper import (StreamHelper, open_helper)
 
 
-def read_tie(offset: int, stream: io.BufferedReader):
+def read_tie(stream: StreamHelper):
     res: Tie = Tie()
-    stream.seek(offset)
-    res.meshes_offset = struct.unpack('>I', stream.read(0x04))[0]
-    stream.seek(offset + 0x0F)
-    res.metadata_count = struct.unpack('>B', stream.read(0x01))[0]
-    # KINDA UNSURE /// B is for Unsigned Byte, b is for Signer Byte / Means that B can't be negative, and b can be !
-    stream.seek(offset + 0x14)
-    res.vertex_buffer_start, res.vertex_buffer_size = struct.unpack('>2I', stream.read(0x08))
-    stream.seek(offset + 0x20)
-    res.scale = struct.unpack('>3f', stream.read(0x0C))
-    print(res.scale)
-    stream.seek(offset + 0x64)
-    res.name_offset, res.tuid = struct.unpack('>IQ', stream.read(0x0C))
+    res.meshes_offset = stream.readUInt(0x00)
+    res.metadata_count = stream.readUByte(0x0F)
+    res.vertex_buffer_start = stream.readUInt(0x14)
+    res.vertex_buffer_size = stream.readUInt(0x18)
+    res.scale = stream.readVector3(0x20)
+    res.name_offset = stream.readUInt(0x64)
+    res.tuid = stream.readULong(0x68)
+    print("o:{0} TIE {1}: {2}".format(hex(stream.offset), hex(res.tuid), res.__dict__))
     return res
 
 
-def read_tie_mesh(offset: int, stream: io.BufferedReader):
+def read_tie_mesh(stream: StreamHelper):
     res: TieMesh = TieMesh()
-    stream.seek(offset)
-    print(offset)
-    res.indexIndex, res.vertexIndex = struct.unpack('>IH', stream.read(0x06))
-    stream.seek(offset + 0x08)
-    res.vertexCount = struct.unpack('>H', stream.read(0x02))
-    stream.seek(offset + 0x12)
-    res.indexCount = struct.unpack('>H', stream.read(0x02))
-    stream.seek(offset + 0x28)
-    res.oldShaderIndex = struct.unpack('>H', stream.read(0x02))
-    stream.seek(offset + 0x2A)
-    res.newShaderIndex = struct.unpack('>B', stream.read(0x01))
+    res.indexIndex = stream.readUInt(0x00)
+    res.vertexIndex = stream.readUShort(0x04)
+    res.vertexCount = stream.readUShort(0x08)
+    res.indexCount = stream.readUShort(0x12)
+    res.oldShaderIndex = stream.readUShort(0x28)
+    res.newShaderIndex = stream.readUByte(0x2A)
+    print("o:{0} TIE_MESH {1}: {2}".format(hex(stream.offset), res.indexIndex, res.__dict__))
     return res
 
 
-def read_ighw_header(stream: io.BufferedReader):
+def read_ighw_header(stream: StreamHelper):
     res: types.IGHeader = types.IGHeader()
-    magic1, magic2, count, length = struct.unpack('>4I', stream.read(0x10))
-    res.magic1 = magic1
-    res.magic2 = magic2
-    res.chunks_count = count
-    res.length = length
+    res.magic1 = stream.readUInt(0x00)
+    res.magic2 = stream.readUInt(0x04)
+    res.chunks_count = stream.readUInt(0x08)
+    res.length = stream.readUInt(0x0C)
     return res
 
 
-def read_ighw_chunks(stream: io.BufferedReader, headers: types.IGHeader, base_offset: int):
+def read_ighw_chunks(stream: StreamHelper, headers: types.IGHeader):
     for i in range(headers.chunks_count):
-        cid, offset, length, count = struct.unpack('>4I', stream.read(0x10))
-        yield {
-            'id': cid,
-            'offset': offset,
-            'count': count,
-            'length': length,
-            'this_offset': base_offset
-        }
-        base_offset = base_offset + 0x10
+        ighw_chunk: types.IGSectionChunk = types.IGSectionChunk()
+        ighw_chunk.id = stream.readUInt(0x00)
+        ighw_chunk.offset = stream.readUInt(0x04)
+        ighw_chunk.count = stream.readUInt(0x08) & 0x00FFFFFF
+        ighw_chunk.length = stream.readUInt(0x0C)
+        stream.jump(0x10)
+        yield ighw_chunk
 
 
 class TieRefReader:
-    def __init__(self, stream: io.BufferedReader, tie_ref: dict[str, int]):
-        stream.seek(tie_ref["offset"])
+    def __init__(self, stream: StreamHelper, tie_ref: types.IGAssetRef):
+        stream.seek(tie_ref.offset)
         self.ighw_headers: types.IGHeader = read_ighw_header(stream)
-        stream.seek(tie_ref['offset'] + 0x20)
-        self.ighw_chunks: typing.Generator[dict[str, int]] = read_ighw_chunks(
-            stream,
-            self.ighw_headers,
-            tie_ref['offset'] + 0x20
-        )
+        stream.jump(0x20)
+        self.ighw_chunks: typing.Generator[types.IGSectionChunk] = read_ighw_chunks(stream, self.ighw_headers)
         for chunk in self.ighw_chunks:
-            print("TIE_CHUNK {0} {1}: {2}".format(hex(tie_ref['tuid']), hex(chunk['id']), chunk))
-            if chunk['id'] != 0x3400:
+            if chunk.id != 0x3400:
                 continue
-            tie = list[CTie]().append(CTie(chunk['this_offset'], stream))
+            print("o:{3} TIE_CHUNK {0} {1}: {2}".format(hex(tie_ref.tuid), hex(chunk.id), chunk.__dict__, hex(stream.offset)))
+            ties = list[CTie]()
+            stream.seek(chunk.offset + tie_ref.offset)
+            for i in range(chunk.count):
+                ties.append(CTie(stream))
+                stream.jump(0x80)
+            print(ties)
 
 
 class CTie:
-    def __init__(self, base_offset: int, stream: io.BufferedReader):
-        tie = read_tie(base_offset, stream)
+    def __init__(self, stream: StreamHelper):
+        tie = read_tie(stream)
         tie_meshes: list[TieMesh] = list[TieMesh]()
-        tie_mesh_offset = base_offset + tie.meshes_offset
-        stream.seek(tie_mesh_offset)
+        stream.jump(tie.meshes_offset)
         for i in range(tie.metadata_count):
-            tie_mesh = read_tie_mesh(tie_mesh_offset, stream)
+            tie_mesh = read_tie_mesh(stream)
             tie_meshes.append(tie_mesh)
-            tie_mesh_offset = tie_mesh_offset + 0x40
+            stream.jump(0x40)
         self.tie = tie
         self.tie_meshes = tie_meshes
-        print("TIE {0}: {1}".format(hex(self.tie.tuid), self.tie.__dict__))
 
 
 class Tie(dict):
