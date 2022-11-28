@@ -105,9 +105,10 @@ class TieRefReader:
 
         # READ INDICES
         chunk = query_section(0x3200, self.ighw_chunks)
-        stream.seek(chunk.offset + tie_ref.offset)
+        stream.seek(tie_ref.offset + chunk.offset)
         for tie_mesh in self.tie.tie_meshes:
             mesh_indices = []
+            # stream.seek(tie_ref.offset + chunk.offset + (tie_mesh.indexIndex * 2))  # jump(0x06) does the same thing
             for i in range(tie_mesh.indexCount // 3):
                 mesh_indices.append(read_indices(stream))
                 stream.jump(0x06)
@@ -116,7 +117,7 @@ class TieRefReader:
 
 
 def read_indices(stream: StreamHelper):
-    indice: tuple[int, int, int] = (stream.readUShort(0x00), stream.readUShort(0x02), stream.readUShort(0x04))
+    indice: tuple[int, int, int] = (stream.readUShort(0x04), stream.readUShort(0x02), stream.readUShort(0x00))
     return indice
 
 
