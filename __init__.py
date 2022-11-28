@@ -21,6 +21,7 @@
 # SOFTWARE.
 import bpy
 import bpy_extras
+import bmesh
 
 
 bl_info = {
@@ -85,19 +86,42 @@ def extract_and_import(operator, context):
         meshdata = object()
         meshobj = object()
         for tie in assetmanager.ties:
+            verts = list[tuple[float, float, float]]()
+            uvs = []
+            faces = []
+            edges = []  # Ignore
+            for vertex in tie.vertices:
+                for vert in vertex:
+                    verts.append(vert.__loctuple__())
+                    uvs.append(vert.__uvstuple__())
+            for mesh_indices in tie.indices:
+                for index in mesh_indices:
+                    faces.append(index)
+            '''
             for mesh_idx, mesh in enumerate(tie.tie.tie_meshes):
+                #bpy.ops.object.mode_set(mode="object")
                 verts = list[tuple[float, float, float]]()
+                uvs = []
                 faces = []
                 edges = []  # Ignore
                 for vertex in tie.vertices:
                     for vert in vertex:
                         verts.append(vert.__loctuple__())
-                for indices in tie.indices:
-                    for mesh_indices in tie.indices:
-                        for index in mesh_indices:
-                            faces.append(index)
-                meshdata = bpy.data.meshes.new("TieMesh_{0}_{1}".format(str(tie.tie.tie.tuid)[:4], mesh_idx))
-                meshdata.from_pydata(verts, edges, faces)
+                        uvs.append(vert.__uvstuple__())
+                for mesh_indices in tie.indices:
+                    faces = mesh_indices
+                    #for index in mesh_indices:
+                    #    faces.append(index)
+            '''
+            meshdata = bpy.data.meshes.new("TieMesh_{0}".format(str(tie.tie.tie.tuid)[:4]))
+            meshdata.from_pydata(verts, edges, faces)
+            # bm = bmesh.from_edit_mesh(meshdata)
+            # uv = bm.loops.layers.uv.new()
+            # bpy.ops.object.mode_set(mode="edit")
+            # for face in bm.faces:
+            #    for loop in face.loops:
+            #        loop[uv].iv = uvs[loop.vert.index]
+
             meshobj = bpy.data.objects.new("Tie_{0}".format(str(tie.tie.tie.tuid)[:4]), meshdata)
             ties_collection.objects.link(meshobj)
 

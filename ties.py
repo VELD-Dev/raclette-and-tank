@@ -134,8 +134,8 @@ class CTie:
 
     def read_vertex(self, stream: StreamHelper):
         res: types.MeshVertex = types.MeshVertex()
-        x, y, z = stream.readVector3Short(0x00)
-        sx, sy, sz = self.tie.scale
+        x, z, y = stream.readVector3Short(0x00)
+        sx, sz, sy = self.tie.scale
         res.location = (x * sx, y * sy, z * sz)
         res.UVs = (stream.readFloat16(0x08), stream.readFloat16(0x0A))
         # print("o:{0} VERTEX (TUID:{1}): {2}".format(hex(stream.offset), hex(self.tie.tuid), res.__dict__))
