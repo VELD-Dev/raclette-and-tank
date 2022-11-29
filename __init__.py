@@ -19,10 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import os.path
+import random
+import typing
+
 import bpy
 import bpy_extras
 import bmesh
-
 
 bl_info = {
     "name": "raclette-and-tank-importer",
@@ -79,53 +82,87 @@ def extract_and_import(operator, context):
     print(dirname)
     filemanager = file_manager.FileManager(dirname)
     assetmanager = assets_manager.AssetManager(filemanager, operator)
+
+    # Level name is completely decorative. It is completely useless.
+    level_name = os.path.basename(os.path.dirname(dirname))
+    encodedlvlname = level_name.replace(' ', 'µ', -1)
+    print("Checking levelname {0}...".format(level_name))
+    lvl_collection: typing.Any
+    lvl_collection_pname: str
+    final_lvlname: str
+    if encodedlvlname in types.LevelNamesEnum.__dict__:
+        print("Levelname exists in ENUM !")
+        final_lvlname = types.LevelNamesEnum[encodedlvlname].value
+    else:
+        final_lvlname = level_name.replace(' ', '_', -1)
+
+    if final_lvlname not in bpy.data.collections:
+        print("Linking new collection to scene...")
+        lvl_collection = bpy.data.collections.new(final_lvlname)
+        lvl_collection_pname = final_lvlname
+        bpy.context.scene.collection.children.link(lvl_collection)
+    else:
+        lvl_collection = bpy.data.collections[final_lvlname]
+        lvl_collection_pname = final_lvlname
+
+    # If ties are enabled, add ties.
     if operator.use_ties:
-        ties_collection = bpy.data.collections.new("Ties")
-        bpy.context.scene.collection.children.link(ties_collection)
-        ties_objects = list[tuple[object, list]]()
-        meshdata = object()
-        meshobj = object()
+        ties_collection_name = "Ties"
+        ties_collection = object()
+        if operator.put_in_collections:
+            if ties_collection_name in bpy.data.collections:
+                ties_collection = bpy.data.collections[ties_collection_name]
+            else:
+                ties_collection = bpy.data.collections.new("Ties")
+                lvl_collection.children.link(ties_collection)
+        else:
+            ties_collection = bpy.data.collections[lvl_collection_pname]
+        tie_blenderobjects = []
+
+        # DEBUG
+        # randtie = 108  # random.randint(0, len(assetmanager.ties))
+        # tie = assetmanager.ties[randtie]
+        # print("And the randtie of today is... tie N°{0} !".format(randtie))
+
         for tie in assetmanager.ties:
-            verts = list[tuple[float, float, float]]()
-            uvs = []
-            faces = []
-            edges = []  # Ignore
-            for vertex in tie.vertices:
-                for vert in vertex:
-                    verts.append(vert.__loctuple__())
-                    uvs.append(vert.__uvstuple__())
-            for mesh_indices in tie.indices:
-                for index in mesh_indices:
-                    faces.append(index)
-            '''
-            for mesh_idx, mesh in enumerate(tie.tie.tie_meshes):
-                #bpy.ops.object.mode_set(mode="object")
+            for idx, vertex in enumerate(tie.vertices):
+                meshdataname = "TieData_{0}_{1}".format(str(tie.tie.tie.tuid)[:5], idx)
                 verts = list[tuple[float, float, float]]()
+                faces = tie.indices[idx]
                 uvs = []
-                faces = []
                 edges = []  # Ignore
-                for vertex in tie.vertices:
-                    for vert in vertex:
-                        verts.append(vert.__loctuple__())
-                        uvs.append(vert.__uvstuple__())
-                for mesh_indices in tie.indices:
-                    faces = mesh_indices
-                    #for index in mesh_indices:
-                    #    faces.append(index)
-            '''
-            meshdata = bpy.data.meshes.new("TieMesh_{0}".format(str(tie.tie.tie.tuid)[:4]))
-            meshdata.from_pydata(verts, edges, faces)
-            # bm = bmesh.from_edit_mesh(meshdata)
-            # uv = bm.loops.layers.uv.new()
-            # bpy.ops.object.mode_set(mode="edit")
-            # for face in bm.faces:
-            #    for loop in face.loops:
-            #        loop[uv].iv = uvs[loop.vert.index]
+                for mesh_vertex in vertex:
+                    verts.append(mesh_vertex.__loctuple__())
+                    uvs.append(mesh_vertex.__uvstuple__())
+                meshdata = bpy.data.meshes.new(meshdataname)
+                meshdata.from_pydata(verts, edges, faces)
+                obj = bpy.data.objects.new(name="Tie_{0}_{1}".format(str(tie.tie.tie.tuid)[:5], idx),
+                                           object_data=bpy.data.meshes[meshdataname])
+                if not operator.parent_meshes_to_objects:
+                    ties_collection.objects.link(obj)
+                else:
+                    tie_blenderobjects.append(obj)
+            if operator.parent_meshes_to_objects:
+                bpy.context.selected_objects = tie_blenderobjects
+                bpy.ops.object.join()
 
-            meshobj = bpy.data.objects.new("Tie_{0}".format(str(tie.tie.tie.tuid)[:4]), meshdata)
-            ties_collection.objects.link(meshobj)
-
-
+        '''
+        if (3, 2, 0) > bpy.app.version > (2, 8, 0):
+            c = dict()
+            c["object"] = c["active_object"] = bpy.data.objects["Tie_{0}_0".format(str(tie.tie.tie.tuid)[:5])]
+            c["selected_objects"] = c["selected_editable_objects"] = tie_blenderobjects
+            bpy.ops.objects.join(c)
+        else:
+            C = bpy.context bpy.data.objects["Tie_{0}_0".format(str(tie.tie.tie.tuid)[:5])]
+            with C.temp_override(active_object=C.active_object, selected_editable_objects=tie_blenderobjects):
+                bpy.ops.object.join()
+        '''
+        # bm = bmesh.from_edit_mesh(meshdata)
+        # uv = bm.loops.layers.uv.new()
+        # bpy.ops.object.mode_set(mode="edit")
+        # for face in bm.faces:
+        #    for loop in face.loops:
+        #        loop[uv].iv = uvs[loop.vert.index]
 
 
 '''
@@ -238,6 +275,11 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         description="Wether every mesh supported by zones should be put into its zone. Creating subfolders in Collection.",
         default=False
     )
+    parent_meshes_to_objects: bpy.props.BoolProperty(
+        name="Parent meshes to objects",
+        description="Disable it only if you know what you're doing! / Wether meshes of an object (tie, moby) should be parented/merged into one Blender object or not.",
+        default=True
+    )
 
     def draw(self, context):
         pass
@@ -300,6 +342,7 @@ class EAI_PT_import_settings(bpy.types.Panel):
         layout.prop(operator, 'use_lightning')
         layout.prop(operator, 'use_zones')
         layout.prop(operator, 'put_in_collections')
+        layout.prop(operator, 'parent_meshes_to_objects')
 
 
 ########################################
