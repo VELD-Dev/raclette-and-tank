@@ -3,18 +3,22 @@ import typing
 import enum
 
 import types
-from . import (file_manager, mobys, ties)
+import zones
+from . import (file_manager, mobys, ties, ExtractAndImport)
 from .stream_helper import (StreamHelper, open_helper)
 from .types import (SectionIDTypeEnum, MobyIDTypeEnum, IGHeader, IGAssetRef, IGSectionChunk)
+from .utils import (read_sections_chunks, read_ighw_header, query_section)
 
 
 class AssetManager:
-    def __init__(self, fm: file_manager.FileManager, operator):
+    def __init__(self, fm: file_manager.FileManager, operator: ExtractAndImport):
         print("AssetManager: INIT")
         isOld = fm.isIE2
         self.fm: file_manager.FileManager = fm
-        self.mobys: list[IGAssetRef] = list[IGAssetRef]()
+        self.mobys_refs: list[IGAssetRef] = list[IGAssetRef]()
         self.ties_refs: list[IGAssetRef] = list[IGAssetRef]()
+        self.zones_refs: list[IGAssetRef] = list[IGAssetRef]()
+        self.ties_instances: list[zones.CTieInstance] = list[zones.CTieInstance]()
         if isOld is False:
             print("AssetManager: Is Not Old!")
             print(fm.igfiles)
@@ -41,6 +45,13 @@ class AssetManager:
                         # print("----")
                         tie = ties.TieRefReader(stream, tie_ref)
                         self.ties.append(tie)
+                elif igfile == "zones.dat" and operator.use_zones:
+                    self.LoadZones()
+                    self.zones = list()
+                    for zone_ref in self.zones_refs:
+                        print("----")
+                        zone = zones.ZoneReader(stream, zone_ref)
+                        self.zones.append(zone)
 
                 '''
                 if igfile == "mobys.dat" and operator.use_mobys == True:
@@ -73,6 +84,30 @@ class AssetManager:
             assetlookup.jump(0x10)
             self.ties_refs.append(asset_ref)
 
+    def LoadZones(self):
+        if self.fm.isIE2:
+            print("UNSUPPORTED GAME VERSION")
+            return
+            # self.LoadOldZones()
+            # TISection = query_section(zones_chunks, 0x9240)
+            # if "debug.dat" in self.fm.igfiles:
+        else:
+            self.LoadZonesNew()
+
+    def LoadZonesNew(self):
+        assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
+        zonesSection = query_section(self.sections, 0x1DA00)
+        assetlookup.seek(zonesSection)
+        self.zones_refs = list[IGAssetRef]()
+        for i in range(zonesSection.length // 0x10):
+            asset_ref = IGAssetRef()
+            asset_ref.tuid = assetlookup.readULong(0x00)
+            asset_ref.offset = assetlookup.readUInt(0x08)
+            asset_ref.length = assetlookup.readUInt(0x0C)
+            print(f"o:{hex(assetlookup.offset)} ZONE_RAW-REF {hex(asset_ref.tuid)}: {asset_ref.__dict__}")
+            assetlookup.jump(0x10)
+            self.zones_refs.append(asset_ref)
+
     def LoadMobys(self):
         if self.fm.isIE2:
             print("MOBY_STREAM: Unsupported format!")
@@ -94,32 +129,3 @@ class AssetManager:
             assetlookup.jump(0x10)
             print("o:{2} MOBY_RAW-REF {0}: {1}".format(hex(res.tuid), res.__dict__, hex(assetlookup.offset)))
             self.mobys.append(res)
-
-
-def read_ighw_header(stream: StreamHelper):
-    header: IGHeader = IGHeader()
-    header.magic1 = stream.readUInt(0x00)
-    header.magic2 = stream.readUInt(0x04)
-    header.chunks_count = stream.readUInt(0x08)
-    header.length = stream.readUInt(0x0C)
-    return header
-
-
-def read_sections_chunks(headers: IGHeader, stream: StreamHelper):
-    stream.seek(0x20)  # 0x20 is the constant offset for IGHW files
-    for i in range(int(headers.length / 0x10)):
-        sectionChunk: IGSectionChunk = IGSectionChunk()
-        sectionChunk.id = stream.readUInt(0x00)
-        sectionChunk.offset = stream.readUInt(0x04)
-        sectionChunk.count = stream.readUInt(0x08)
-        sectionChunk.length = stream.readUInt(0x0C)
-        # print("o:{2} IGHW_SectHeader {0}: {1}".format(hex(sectionChunk.id), sectionChunk.__dict__, hex(stream.offset)))
-        stream.jump(0x10)
-        yield sectionChunk
-
-
-def query_section(chunks: list[IGSectionChunk], section_id: int):
-    if section_id in SectionIDTypeEnum._value2member_map_:
-        for section in chunks:
-            if section.id == section_id:
-                return section

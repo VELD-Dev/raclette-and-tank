@@ -18,6 +18,9 @@ class TieSectionIDTypeEnum(enum.Enum):
     TIE = 0x3400
     VERTICES = 0x3000
     INDICES = 0x3200
+class ZoneSectionIDTypeEnum(enum.Enum):
+    TIES_INSTANCES_REFS_OLD = 0x9240
+    TIES_INSTANCES_REFS_NEW = 0x72C0
 
 
 class LevelNamesEnum(enum.Enum):
@@ -72,6 +75,7 @@ class LevelNamesEnum(enum.Enum):
     # ADD ITN MAPS
     # ADD RESISTANCE 2 MAPS
     # ADD RESISTANCE 3 MAPS
+
 
 class IGHeader(dict):
     magic1: int

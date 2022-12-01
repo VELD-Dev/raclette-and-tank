@@ -125,8 +125,10 @@ def extract_and_import(operator, context):
         # print("And the randtie of today is... tie N°{0} !".format(randtie))
 
         for tie in assetmanager.ties:
+            parent_obj = bpy.data.objects.new(name="Tie_{0}".format(str(tie.tie.tie.tuid)[:6]), object_data=None)
+            ties_collection.objects.link(parent_obj)
             for idx, vertex in enumerate(tie.vertices):
-                meshdataname = "TieData_{0}_{1}".format(str(tie.tie.tie.tuid)[:5], idx)
+                meshdataname = "TieData_{0}_{1}".format(str(tie.tie.tie.tuid)[:6], idx)
                 verts = list[tuple[float, float, float]]()
                 faces = tie.indices[idx]
                 uvs = []
@@ -136,15 +138,16 @@ def extract_and_import(operator, context):
                     uvs.append(mesh_vertex.__uvstuple__())
                 meshdata = bpy.data.meshes.new(meshdataname)
                 meshdata.from_pydata(verts, edges, faces)
-                obj = bpy.data.objects.new(name="Tie_{0}_{1}".format(str(tie.tie.tie.tuid)[:5], idx),
+                obj = bpy.data.objects.new(name="Tie_{0}_{1}".format(str(tie.tie.tie.tuid)[:6], idx),
                                            object_data=bpy.data.meshes[meshdataname])
                 if not operator.parent_meshes_to_objects:
                     ties_collection.objects.link(obj)
                 else:
-                    tie_blenderobjects.append(obj)
-            if operator.parent_meshes_to_objects:
-                bpy.context.selected_objects = tie_blenderobjects
-                bpy.ops.object.join()
+                    ties_collection.objects.link(obj)
+                    obj.parent = parent_obj
+            #if operator.parent_meshes_to_objects:
+            #    bpy.context.selected_objects = tie_blenderobjects
+            #    bpy.ops.object.join()
 
         '''
         if (3, 2, 0) > bpy.app.version > (2, 8, 0):
@@ -165,47 +168,6 @@ def extract_and_import(operator, context):
         #        loop[uv].iv = uvs[loop.vert.index]
 
 
-'''
-def extract_and_import(operator, context):
-    dirname = operator.directory
-    print(dirname)
-    dir_content = os.listdir(dirname)
-    print(dir_content)
-
-    offset = list[int]()
-    count = list[int]()
-    oid = list[int]()
-    length = list[int]()
-
-    filesonly = [file for file in dir_content if os.path.isfile(os.path.join(dirname, file))]
-
-    for file in filesonly:
-        filepath = os.path.join(dirname, file)
-        base_stream = open(filepath, 'rb')
-        print("\n----\n" + file)
-        headers = read_file_header(base_stream)
-        print(headers)
-        if int(headers["magic1"]) == 0x49474857:
-
-            # DOES NOT SUPPORT ToD & QFB GAMES *YET*
-            if file == "main.dat":
-                continue
-            
-            # DOES SUPPORT POST-R2 GAMES
-            if file == "assetlookup.dat":
-                stream = read_chunks_headers(base_stream, headers['chunks_count'])
-                for idx, (h, soid, scount, soffset, slength) in enumerate(stream):
-                    print("{0} {1}".format(hex(soid), soid))
-                    if soid != IG_CHUNK_ID_MOBY or soid != IG_CHUNK_ID_MOBY_MODELS or soid != IG_CHUNK_ID_MOBY_MESHES or soid != IG_CHUNK_ID_MOBY_INDICES or soid != IG_CHUNK_ID_MOBY_VERTICES:
-                        continue
-                    print("{6} {0}: ({7}) {1} / (oid:{2}, offset:{3}, count:{4}, length:{5})".format(idx, h, hex(soid), hex(soffset), hex(scount), hex(slength), file, hex(soid)))
-                    oid.append(int(soid))
-                    count.append(int(scount))
-                    offset.append(int(soffset))
-                    length.append(int(slength))
-'''
-
-
 ##############################################
 ########## EXTRACT AND IMPORT CLASS ##########
 ##############################################
@@ -218,16 +180,6 @@ class ExtractAndImport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     bl_options = {"REGISTER"}
 
     filename_ext = ".dat"
-    # filter_glob: bpy.props.StringProperty(
-    #    default="*main.dat;*assetlookup.dat;*debug.dat",
-    #    options={"HIDDEN"}
-    # )
-
-    # directory: bpy.props.StringProperty(
-    #    name="Level Folder",
-    #    description="Path to the uncompressed level folder. There should be .dat files inside.",
-    #    subtype="DIR_PATH"
-    # )
     directory: bpy.props.StringProperty()
     filter_glob: bpy.props.StringProperty(
         default="*.dat",
