@@ -2,16 +2,15 @@ import struct
 import typing
 import enum
 
-import types
-import zones
-from . import (file_manager, mobys, ties, ExtractAndImport)
+from . import types
+from . import (file_manager, mobys, ties, zones)
 from .stream_helper import (StreamHelper, open_helper)
 from .types import (SectionIDTypeEnum, MobyIDTypeEnum, IGHeader, IGAssetRef, IGSectionChunk)
 from .utils import (read_sections_chunks, read_ighw_header, query_section)
 
 
 class AssetManager:
-    def __init__(self, fm: file_manager.FileManager, operator: ExtractAndImport):
+    def __init__(self, fm: file_manager.FileManager, operator):
         print("AssetManager: INIT")
         isOld = fm.isIE2
         self.fm: file_manager.FileManager = fm
@@ -47,9 +46,10 @@ class AssetManager:
                         self.ties.append(tie)
                 elif igfile == "zones.dat" and operator.use_zones:
                     self.LoadZones()
-                    self.zones = list()
+                    self.zones = list[zones.ZoneReader]()
                     for zone_ref in self.zones_refs:
                         print("----")
+                        print(zone_ref.__dict__)
                         zone = zones.ZoneReader(stream, zone_ref)
                         self.zones.append(zone)
 
@@ -97,7 +97,7 @@ class AssetManager:
     def LoadZonesNew(self):
         assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
         zonesSection = query_section(self.sections, 0x1DA00)
-        assetlookup.seek(zonesSection)
+        assetlookup.seek(zonesSection.offset)
         self.zones_refs = list[IGAssetRef]()
         for i in range(zonesSection.length // 0x10):
             asset_ref = IGAssetRef()

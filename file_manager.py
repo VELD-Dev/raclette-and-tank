@@ -1,9 +1,5 @@
-import bpy
 import os
 import os.path
-import struct
-import bpy_extras
-from typing import (Any, NewType)
 
 from .stream_helper import (StreamHelper, open_helper)
 

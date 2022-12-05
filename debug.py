@@ -1,5 +1,5 @@
-import stream_helper
-import types
+from . import stream_helper
+from . import types
 from .utils import (read_sections_chunks, read_ighw_header, query_section)
 
 

@@ -12,15 +12,19 @@ class MobyIDTypeEnum(enum.Enum):
 class SectionIDTypeEnum(enum.Enum):
     MOBYS = 0x1D600
     TIES = 0x1D300
+    ZONES = 0x1DA00
 
 
 class TieSectionIDTypeEnum(enum.Enum):
     TIE = 0x3400
     VERTICES = 0x3000
     INDICES = 0x3200
+
+
 class ZoneSectionIDTypeEnum(enum.Enum):
     TIES_INSTANCES_REFS_OLD = 0x9240
     TIES_INSTANCES_REFS_NEW = 0x72C0
+    TIES_INSTANCES_TUIDS = 0x7200
 
 
 class LevelNamesEnum(enum.Enum):

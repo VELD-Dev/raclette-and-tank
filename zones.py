@@ -1,7 +1,5 @@
-import file_manager
-import types
 import mathutils
-import stream_helper
+from . import (file_manager, stream_helper, types)
 from math import radians
 
 
@@ -15,9 +13,6 @@ class TieInstance(dict):
     """0x04 Long"""
     tieIndex: int
     """0x04 Long"""
-    tie: types.Tie
-
-def read_zone(stream: stream_helper, subfile_offset: int):
 
 
 def read_ighw_header(stream: stream_helper.StreamHelper) -> types.IGHeader:
@@ -41,10 +36,9 @@ def read_ighw_chunks(stream: stream_helper.StreamHelper, headers: types.IGHeader
 
 
 def query_section(section_id: int, chunks: list[types.IGSectionChunk]):
-    if section_id in types.ZoneSectionIDTypeEnum._value2member_map_:
-        for section in chunks:
-            if section.id == section_id:
-                return section
+    for section in chunks:
+        if section.id == section_id:
+            return section
 
 
 class ZoneReader:
@@ -52,20 +46,38 @@ class ZoneReader:
         stream.seek(zone_ref.offset)
         self.ighw_headers: types.IGHeader = read_ighw_header(stream)
         stream.jump(0x20)
-        self.ighw_chunks: list[types.IGSectionChunk] = list[types.IGSectionChunk]()
+        self.ighw_chunks: list[types.IGSectionChunk] = list(read_ighw_chunks(stream, self.ighw_headers))
+        self.zone_tuid = zone_ref.tuid
 
-        # READ TIES INSTANCES
-        chunk = query_section(0x72C0, self.ighw_chunks)
-        self.ties_instances
+        # READ TIES TUIDS
+        chunk = query_section(0x7200, self.ighw_chunks)
+        self.ties_tuids = []
+        stream.seek(zone_ref.offset + chunk.offset)
+        for i in range(chunk.count):
+            tuid = stream.readULong(0x00)
+            print(f"o:{hex(stream.offset)} TIE_INST_TUID {i}: {hex(tuid)}")
+            self.ties_tuids.append(tuid)
+            stream.jump(0x08)  # Jump to the next Tie TUID
+        print(self.ties_tuids)
+
+        # READ TIES INSTANCE
+        chunk = query_section(0x7240, self.ighw_chunks)
+        stream.seek(zone_ref.offset + chunk.offset)
+        self.ties_instances = {}
+        for i in range(chunk.count):
+            tie_instance = CTieInstance(stream)
+            tie_instance.tuid = self.ties_tuids[tie_instance.tieIndex]
+            print(f"o:{hex(stream.offset)} TIE_INST {i}: {tie_instance.__dict__}")
+            stream.jump(0x80)  # Jump to the next Tie Instance
+            self.ties_instances[tie_instance.tuid] = tie_instance
 
 
 class CTieInstance(TieInstance):
-    def __init__(self, stream: stream_helper.StreamHelper, tie: types.Tie):
+    def __init__(self, stream: stream_helper.StreamHelper):
         super().__init__()
 
-        tuid = tie.tuid
         self.transformation = stream.readMatrix4x4(0x00)
         self.boundingPosition = stream.readVector3Float(0x40)
         self.boundingRadius = stream.readFloat32(0x4C)
-        self.tieIndex = tuid
-        self.tie = tie
+        self.tieIndex = stream.readUInt(0x50)
+        self.tuid = int()
