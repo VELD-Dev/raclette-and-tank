@@ -35,8 +35,8 @@ bl_info = {
         "Raclette & Tank importer is an asset extractor and importer for Blender. "
         "R&T Importer was made for animators, fangame developers and all those fan stuff. "
         "R&T Importer IS NOT made for level editing ! Use Lunacy Level Editor instead."),
-    "blender": (3, 2, 0),
-    "version": (0, 0, 1),
+    "blender": (3, 3, 0),
+    "version": (1, 0, 0),
     "location": "File > Import > Extract & Import RAC Assets",
     "warning": "Work in progress, be careful, the mod may crash Blender, always backup your files !",
     "doc_url": "https://github.com/VELD-Dev/raclette-and-tank",

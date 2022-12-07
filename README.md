@@ -18,7 +18,7 @@ List of the supported elements:
 - [ ] Mobys [^2]
 - [ ] Shrubs [^3]
 - [ ] UFrags [^4]
-- [ ] Zones [^5]
+- [x] Zones [^5]
 - [ ] Textures [^6]
 
 ## How to use ?
@@ -68,7 +68,7 @@ Importation settings of levels
 ### Category: Include
 | Type      | Default | Supported |  Option Name  | Description                                                                                     |
 |:----------|:-------:|:---------:|:-------------:|:------------------------------------------------------------------------------------------------|
-| `Boolean` |    ❌    |     🚧     | Import Mobys  | Wether Mobys should import mobys or not                                                         |
+| `Boolean` |    ❌    |    🚧     | Import Mobys  | Wether Mobys should import mobys or not                                                         |
 | `Boolean` |    ✅    |     ❌     | Import Shrubs | Wether Shrubs should be imported or not.                                                        |
 | `Boolean` |    ✅    |     ✅     |  Import Ties  | Wether Ties should be imported or not.<br/>It's recommended to not uncheck except for reimports |
 | `Boolean` |    ✅    |     ❌     | Import UFrags | Wether UFrags should be imported or not.<br/>It's recommended to not uncheck this.              |
@@ -77,7 +77,7 @@ Importation settings of levels
 |:----------|:-------:|:---------:|:------------------:|:------------------------------------------------------------------------------------------------------------------------------|
 | `Boolean` |    ✅    |     ❌     |      Textures      | Wether textures should be extracted, imported and applied or not.                                                             |
 | `Boolean` |    ❌    |     ❌     |     Lightning      | Wether light points should be extracted and imported or not.                                                                  |
-| `Boolean` |    ✅    |     🚧     |       Zones        | Wether every mesh supported by zones should be put into its zone<br/>Creating subfolders in Blender.                          |
+| `Boolean` |    ✅    |    🚧     |       Zones        | Wether every mesh supported by zones should be put into its zone<br/>Creating subfolders in Blender.                          |
 | `Boolean` |    ✅    |     ✅     | Create Collections | Wether a creation should be created for each mesh type (Mobys,<br/>Ties, Shrubs, UFrags) or everything should be put at root. |
 
 [^1]: It's basically the greatest part of the terrain and walkable parts of maps.
