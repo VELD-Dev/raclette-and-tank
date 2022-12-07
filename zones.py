@@ -41,8 +41,30 @@ def query_section(section_id: int, chunks: list[types.IGSectionChunk]):
             return section
 
 
+class CTieInstance(TieInstance):
+    def __init__(self, stream: stream_helper.StreamHelper):
+        super().__init__()
+
+        self.transformation = stream.readMatrix4x4(0x00)
+        self.boundingPosition = stream.readVector3Float(0x40)
+        self.boundingRadius = stream.readFloat32(0x4C)
+        self.tieIndex = stream.readUInt(0x50)
+        self.tuid = int()
+
+
 class ZoneReader:
+    ighw_headers: types.IGHeader
+    ighw_chunks: list[types.IGSectionChunk]
+    zone_tuid: int
+    ties_tuids: list[int]
+    ties_instances: list[CTieInstance]
+
     def __init__(self, stream: stream_helper.StreamHelper, zone_ref: types.IGAssetRef):
+        self.ighw_headers = None
+        self.ighw_chunks = None
+        self.zone_tuid = None
+        self.ties_tuids = None
+        self.ties_instances = None
         stream.seek(zone_ref.offset)
         self.ighw_headers: types.IGHeader = read_ighw_header(stream)
         stream.jump(0x20)
@@ -52,6 +74,8 @@ class ZoneReader:
         # READ TIES TUIDS
         print(self.ighw_chunks)
         chunk = query_section(0x7200, self.ighw_chunks)
+        if chunk is None:
+            return
         self.ties_tuids = []
         stream.seek(zone_ref.offset + chunk.offset)
         for i in range(chunk.count):
@@ -63,8 +87,10 @@ class ZoneReader:
 
         # READ TIES INSTANCE
         chunk = query_section(0x7240, self.ighw_chunks)
-        stream.seek(zone_ref.offset + chunk.offset)
+        if chunk is None:
+            return
         self.ties_instances: list[CTieInstance] = []
+        stream.seek(zone_ref.offset + chunk.offset)
         for i in range(chunk.count):
             tie_instance = CTieInstance(stream)
             tie_instance.tuid = self.ties_tuids[tie_instance.tieIndex]
@@ -79,14 +105,3 @@ class ZoneReader:
                 filtered_ties.append(tie_instance)
         if filtered_ties[index] is not None:
             return filtered_ties[index].transformation
-
-
-class CTieInstance(TieInstance):
-    def __init__(self, stream: stream_helper.StreamHelper):
-        super().__init__()
-
-        self.transformation = stream.readMatrix4x4(0x00)
-        self.boundingPosition = stream.readVector3Float(0x40)
-        self.boundingRadius = stream.readFloat32(0x4C)
-        self.tieIndex = stream.readUInt(0x50)
-        self.tuid = int()

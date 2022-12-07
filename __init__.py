@@ -108,19 +108,20 @@ def extract_and_import(operator, context):
 
     # If ties are enabled, add ties.
     if operator.use_ties:
-        ties_collection_name = "Ties"
+        ties_collection_name = f"Ties {level_name}"
         ties_collection = object()
         if operator.put_in_collections:
             if ties_collection_name in bpy.data.collections:
                 ties_collection = bpy.data.collections[ties_collection_name]
             else:
-                ties_collection = bpy.data.collections.new("Ties")
+                ties_collection = bpy.data.collections.new(ties_collection_name)
                 lvl_collection.children.link(ties_collection)
         else:
             ties_collection = bpy.data.collections[lvl_collection_pname]
 
         zones = {}
         for zone in assetmanager.zones:
+            print(zone)
             zones[zone.zone_tuid] = zone
             print(f"Zone {zone.zone_tuid} Class Inst: {zone} - Ties: {zone.ties_instances}")
         for zone in zones.values():

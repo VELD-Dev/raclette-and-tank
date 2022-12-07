@@ -51,7 +51,8 @@ class AssetManager:
                         print("----")
                         print(zone_ref.__dict__)
                         zone = zones.ZoneReader(stream, zone_ref)
-                        self.zones.append(zone)
+                        if zone.ties_instances is not None:
+                            self.zones.append(zone)
 
                 '''
                 if igfile == "mobys.dat" and operator.use_mobys == True:
