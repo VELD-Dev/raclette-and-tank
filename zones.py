@@ -50,6 +50,7 @@ class ZoneReader:
         self.zone_tuid = zone_ref.tuid
 
         # READ TIES TUIDS
+        print(self.ighw_chunks)
         chunk = query_section(0x7200, self.ighw_chunks)
         self.ties_tuids = []
         stream.seek(zone_ref.offset + chunk.offset)
@@ -63,13 +64,21 @@ class ZoneReader:
         # READ TIES INSTANCE
         chunk = query_section(0x7240, self.ighw_chunks)
         stream.seek(zone_ref.offset + chunk.offset)
-        self.ties_instances = {}
+        self.ties_instances: list[CTieInstance] = []
         for i in range(chunk.count):
             tie_instance = CTieInstance(stream)
             tie_instance.tuid = self.ties_tuids[tie_instance.tieIndex]
             print(f"o:{hex(stream.offset)} TIE_INST {i}: {tie_instance.__dict__}")
             stream.jump(0x80)  # Jump to the next Tie Instance
-            self.ties_instances[tie_instance.tuid] = tie_instance
+            self.ties_instances.append(tie_instance)
+
+    def gettietransform(self, tie_tuid: int, index: int = 0) -> mathutils.Matrix:
+        filtered_ties = []
+        for tie_instance in self.ties_instances:
+            if tie_tuid is tie_instance.tuid:
+                filtered_ties.append(tie_instance)
+        if filtered_ties[index] is not None:
+            return filtered_ties[index].transformation
 
 
 class CTieInstance(TieInstance):

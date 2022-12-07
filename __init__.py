@@ -26,6 +26,7 @@ import typing
 import bpy
 import bpy_extras
 import bmesh
+import mathutils
 
 bl_info = {
     "name": "raclette-and-tank-importer",
@@ -54,10 +55,12 @@ if 'bpy' in locals():
     importlib.reload(mobys)
     importlib.reload(types)
     importlib.reload(ties)
+    importlib.reload(zones)
 else:
     from . import file_manager
     from . import assets_manager
     from . import types
+    from .zones import (CTieInstance, TieInstance, ZoneReader)
 
 ###############################################
 ################# CONSTANTS ###################
@@ -103,13 +106,6 @@ def extract_and_import(operator, context):
         lvl_collection = bpy.data.collections[final_lvlname]
         lvl_collection_pname = final_lvlname
 
-    zones = {}
-    # If zones are enabled, use zones.
-    if operator.use_zones:
-        for zone in assetmanager.zones:
-            zones[zone.zone_tuid] = zone
-            print(f"Zone {zone.zone_tuid} Class Inst: {zone} - Ties: {zone.ties_instances}")
-
     # If ties are enabled, add ties.
     if operator.use_ties:
         ties_collection_name = "Ties"
@@ -122,57 +118,72 @@ def extract_and_import(operator, context):
                 lvl_collection.children.link(ties_collection)
         else:
             ties_collection = bpy.data.collections[lvl_collection_pname]
-        tie_blenderobjects = []
 
-        # DEBUG
-        # randtie = 108  # random.randint(0, len(assetmanager.ties))
-        # tie = assetmanager.ties[randtie]
-        # print("And the randtie of today is... tie N°{0} !".format(randtie))
-        if not operator.parent_meshes_to_objects:
-            for tie in assetmanager.ties:
-                parent_obj = bpy.data.objects.new(name="Tie_{0}".format(str(tie.tie.tie.tuid)[:6]), object_data=None)
-                ties_collection.objects.link(parent_obj)
-                for idx, vertex in enumerate(tie.vertices):
-                    meshdataname = "TieData_{0}_{1}".format(str(tie.tie.tie.tuid)[:6], idx)
+        zones = {}
+        for zone in assetmanager.zones:
+            zones[zone.zone_tuid] = zone
+            print(f"Zone {zone.zone_tuid} Class Inst: {zone} - Ties: {zone.ties_instances}")
+        for zone in zones.values():
+            for tie_inst in zone.ties_instances:
+                if operator.parent_meshes_to_objects:
+                    ties = assetmanager.ties
+                    tie = ties[tie_inst.tuid]
+
+                    #objname = str()
+                    #if tie.tie.tie.name is not None:
+                    #    objname = tie.tie.tie.name
+                    #else:
+                    objname = f"Tie_{str(tie.tie.tie.tuid)[:6]}"
+
                     verts = list[tuple[float, float, float]]()
-                    faces = tie.indices[idx]
-                    uvs = []
+                    faces = list[tuple[int, int, int]]()
                     edges = []  # Ignore
-                    for mesh_vertex in vertex:
-                        verts.append(mesh_vertex.__loctuple__())
-                        uvs.append(mesh_vertex.__uvstuple__())
-                    meshdata = bpy.data.meshes.new(meshdataname)
+                    uvs = []  # Ignore for now
+
+                    max_index = 0
+                    for i in range(len(tie.tie.tie_meshes)):
+                        for k in range(tie.tie.tie_meshes[i].indexCount // 3):
+                            faces.append((
+                                tie.indices[i][k][0] + max_index,
+                                tie.indices[i][k][1] + max_index,
+                                tie.indices[i][k][2] + max_index
+                            ))
+                            k += 3
+                        max_index += tie.tie.tie_meshes[i].vertexCount
+                    for vertices in tie.vertices:
+                        for vertex in vertices:
+                            verts.append(vertex.__loctuple__())
+                            uvs.append(vertex.__uvstuple__())
+                    meshdata = bpy.data.meshes.new(f"TieData_{tie_inst.tuid}.{tie_inst.tieIndex}")
+                    tie_inst_matrix = tie_inst.transformation
                     meshdata.from_pydata(verts, edges, faces)
-                    obj = bpy.data.objects.new(name="Tie_{0}_{1}".format(str(tie.tie.tie.tuid)[:6], idx),
-                                               object_data=bpy.data.meshes[meshdataname])
+                    meshdata.transform(tie_inst_matrix)
+                    obj = bpy.data.objects.new(name=objname, object_data=meshdata)
                     ties_collection.objects.link(obj)
-                    obj.parent = parent_obj
-        else:
-            # TODO: REMAKE THAT ENTIRE FKCIN PART...
-            for tie in assetmanager.ties:
-                objname = str(tie.tie.tie.tuid)[:6]
-                verts = list[tuple[float, float, float]]()
-                faces = list[tuple[int, int, int]]()
-                uvs = []
-                edges = []  # Ignore
-                print("----")
-                for idx, meshdata in enumerate(tie.tie.tie_meshes):
-                    ind = tie.indices[idx]
-                    for indicesIndex, (ind1, ind2, ind3) in enumerate(ind):
-                        if (indicesIndex * 3) >= meshdata.indexIndex:
-                            print(f"IndicesIndex: {meshdata.indexIndex}")
-                            faces.append((ind1 + meshdata.indexIndex, ind2 + meshdata.indexIndex, ind3 + meshdata.indexIndex))
-                    #[faces.append((ind1 + meshdata.indexIndex, ind2 + meshdata.indexIndex, ind3 + meshdata.indexIndex))
-                    # for ind in tie.indices for idx, ind1, ind2, ind3 in enumerate(ind) if ind.index() > (meshdata.indexIndex // 3)]
-                for vertices in tie.vertices:
-                    for vertex in vertices:
-                        verts.append(vertex.__loctuple__())
-                        uvs.append(vertex.__uvstuple__())
-                print(f"Indices: {len(faces) * 3} / Vertices: {len(verts)}")
-                meshdata = bpy.data.meshes.new(f"TieData_{objname}")
-                meshdata.from_pydata(verts, edges, faces)
-                obj = bpy.data.objects.new(name=f"Tie_{objname}", object_data=meshdata)
-                #ties_collection.objects.link(obj)
+
+        # if not operator.parent_meshes_to_objects:
+        #     for tie in assetmanager.ties.values():
+        #         parent_obj = bpy.data.objects.new(name="Tie_{0}".format(str(tie.tie.tie.tuid)[:6]), object_data=None)
+        #         ties_collection.objects.link(parent_obj)
+        #         for idx, vertex in enumerate(tie.vertices):
+        #             meshdataname = "TieData_{0}_{1}".format(str(tie.tie.tie.tuid)[:6], idx)
+        #             verts = list[tuple[float, float, float]]()
+        #             faces = tie.indices[idx]
+        #             uvs = []
+        #             edges = []  # Ignore
+        #             for mesh_vertex in vertex:
+        #                 verts.append(mesh_vertex.__loctuple__())
+        #                 uvs.append(mesh_vertex.__uvstuple__())
+        #             meshdata = bpy.data.meshes.new(meshdataname)
+        #             tie_instance_matrix: mathutils.Matrix = [zone.gettietransform(tie.tie.tie.tuid)
+        #                                                      for zone in list(zones.values())
+        #                                                      if zone.gettietransform(tie.tie.tie.tuid)][0]
+        #             meshdata.from_pydata(verts, edges, faces)
+        #             meshdata.transform(tie_instance_matrix)
+        #             obj = bpy.data.objects.new(name="Tie_{0}_{1}".format(str(tie.tie.tie.tuid)[:6], idx),
+        #                                        object_data=bpy.data.meshes[meshdataname])
+        #             ties_collection.objects.link(obj)
+        #             obj.parent = parent_obj
 
         # bm = bmesh.from_edit_mesh(meshdata)
         # uv = bm.loops.layers.uv.new()

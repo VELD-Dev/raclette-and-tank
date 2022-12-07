@@ -39,11 +39,11 @@ class AssetManager:
                 print("----\nAM-OTHER_IGFILE {0}: {1}".format(igfile, headers.__dict__))
                 if igfile == "ties.dat" and operator.use_ties:
                     self.LoadTies()
-                    self.ties = list()
+                    self.ties = dict()
                     for tie_ref in self.ties_refs:
                         # print("----")
                         tie = ties.TieRefReader(stream, tie_ref)
-                        self.ties.append(tie)
+                        self.ties[tie.tie.tie.tuid] = tie
                 elif igfile == "zones.dat" and operator.use_zones:
                     self.LoadZones()
                     self.zones = list[zones.ZoneReader]()

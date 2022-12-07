@@ -97,26 +97,26 @@ class StreamHelper:
         if __offset is not None:
             tuple1: tuple[float, float, float, float] = (
                 self.readFloat32(__offset + 0x00, __relative),
-                self.readFloat32(__offset + 0x04, __relative),
-                self.readFloat32(__offset + 0x08, __relative),
-                self.readFloat32(__offset + 0x0C, __relative)
+                self.readFloat32(__offset + 0x10, __relative),
+                self.readFloat32(__offset + 0x20, __relative),
+                self.readFloat32(__offset + 0x30, __relative)
             )
             tuple2: tuple[float, float, float, float] = (
-                self.readFloat32(__offset + 0x10, __relative),
-                self.readFloat32(__offset + 0x14, __relative),
+                self.readFloat32(__offset + 0x08, __relative),
                 self.readFloat32(__offset + 0x18, __relative),
-                self.readFloat32(__offset + 0x1C, __relative)
+                self.readFloat32(__offset + 0x28, __relative),
+                self.readFloat32(__offset + 0x38, __relative)
             )
             tuple3: tuple[float, float, float, float] = (
-                self.readFloat32(__offset + 0x20, __relative),
+                self.readFloat32(__offset + 0x04, __relative),
+                self.readFloat32(__offset + 0x14, __relative),
                 self.readFloat32(__offset + 0x24, __relative),
-                self.readFloat32(__offset + 0x28, __relative),
-                self.readFloat32(__offset + 0x2C, __relative)
+                self.readFloat32(__offset + 0x34, __relative)
             )
             tuple4: tuple[float, float, float, float] = (
-                self.readFloat32(__offset + 0x30, __relative),
-                self.readFloat32(__offset + 0x34, __relative),
-                self.readFloat32(__offset + 0x38, __relative),
+                self.readFloat32(__offset + 0x0C, __relative),
+                self.readFloat32(__offset + 0x1C, __relative),
+                self.readFloat32(__offset + 0x2C, __relative),
                 self.readFloat32(__offset + 0x3C, __relative)
             )
             matrix: tuple[tuple, tuple, tuple, tuple] = (tuple1, tuple2, tuple3, tuple4)

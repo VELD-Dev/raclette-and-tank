@@ -84,7 +84,7 @@ class TieRefReader:
         vertices = list[list[types.MeshVertex]]()
         indices = []
 
-        # READ TIES
+        # READ TIE
         chunk = query_section(0x3400, self.ighw_chunks)
         # print("o:{3} TIE_CHUNK {0} {1}: {2}".format(hex(tie_ref.tuid), hex(chunk.id), chunk.__dict__, hex(stream.offset)))
         stream.seek(chunk.offset + tie_ref.offset)
@@ -134,8 +134,8 @@ class CTie:
 
     def read_vertex(self, stream: StreamHelper):
         res: types.MeshVertex = types.MeshVertex()
-        x, z, y = stream.readVector3Short(0x00)
-        sx, sz, sy = self.tie.scale
+        x, y, z = stream.readVector3Short(0x00)
+        sx, sy, sz = self.tie.scale
         res.location = (x * sx, y * sy, z * sz)
         res.UVs = (stream.readFloat16(0x08), stream.readFloat16(0x0A))
         # print("o:{0} VERTEX (TUID:{1}): {2}".format(hex(stream.offset), hex(self.tie.tuid), res.__dict__))
