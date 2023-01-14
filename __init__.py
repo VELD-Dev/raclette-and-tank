@@ -20,13 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os.path
-import random
 import typing
 
 import bpy
 import bpy_extras
-import bmesh
-import mathutils
 
 bl_info = {
     "name": "raclette-and-tank-importer",
@@ -43,7 +40,7 @@ bl_info = {
     "category": "Reverse-Engineering"
 }
 
-from . import auto_load
+import auto_load
 
 auto_load.init()
 
@@ -57,10 +54,9 @@ if 'bpy' in locals():
     importlib.reload(ties)
     importlib.reload(zones)
 else:
-    from . import file_manager
-    from . import assets_manager
-    from . import types
-    from .zones import (CTieInstance, TieInstance, ZoneReader)
+    from src import file_manager
+    from src import assets_manager
+    from src import types
 
 ###############################################
 ################# CONSTANTS ###################

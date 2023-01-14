@@ -1,10 +1,5 @@
-import typing
-
-import io
-import struct
-
 from . import types
-from .stream_helper import (StreamHelper, open_helper)
+from .stream_helper import (StreamHelper)
 
 
 def read_tie(stream: StreamHelper, subfile_offset: int) -> types.Tie:

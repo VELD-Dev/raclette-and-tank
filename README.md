@@ -1,5 +1,6 @@
 # Raclette & Tank Importer
-Raclette And Tank Importer (RATI lol) is a Blender plugin that exports a map of Ratchet &amp; Clank from .dat files to Blender.
+![](https://img.shields.io/github/downloads/VELD-Dev/raclette-and-tank/total)  
+Raclette And Tank Importer (RATI, funny coincidence) is a Blender plugin that exports a map of Ratchet &amp; Clank from .dat files to Blender.
 
 ## SUPPORTED GAMES
 List of the supported games (theorically):

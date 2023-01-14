@@ -1,11 +1,6 @@
-import struct
-import typing
-import enum
-
-from . import types
-from . import (file_manager, mobys, ties, zones)
-from .stream_helper import (StreamHelper, open_helper)
-from .types import (SectionIDTypeEnum, MobyIDTypeEnum, IGHeader, IGAssetRef, IGSectionChunk)
+from . import (file_manager, ties, zones)
+from .stream_helper import (StreamHelper)
+from .types import (IGAssetRef, IGSectionChunk)
 from .utils import (read_sections_chunks, read_ighw_header, query_section)
 
 

@@ -1,6 +1,5 @@
 import mathutils
-from . import (file_manager, stream_helper, types)
-from math import radians
+from . import (stream_helper, types)
 
 
 class TieInstance(dict):
