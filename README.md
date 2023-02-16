@@ -1,5 +1,10 @@
-# Raclette & Tank Importer
-![](https://img.shields.io/github/downloads/VELD-Dev/raclette-and-tank/total)  
+<p align="center">
+  <img src="https://images-ext-2.discordapp.net/external/0tJ4AmykdPxYEnqIzgQEzcBSHwtQyrlIfzxU5fqfNFg/https/repository-images.githubusercontent.com/569616803/efdda933-7a4d-4e0a-aa9c-d42dabe7c61f" style="display: blcok; margin: 0 auto">
+</p>
+<p align="center">
+  <img src="https://img.shields.io/github/downloads/VELD-Dev/raclette-and-tank/total" style="display: block; margin: 0 auto">
+  <img src="https://img.shields.io/tokei/lines/github/VELD-Dev/raclette-and-tank" style="display: block; margin: 0 auto">
+</p>
 Raclette And Tank Importer (RATI, funny coincidence) is a Blender plugin that exports a map of Ratchet &amp; Clank from .dat files to Blender.
 
 ## SUPPORTED GAMES
