@@ -166,6 +166,7 @@ def extract_and_import(operator, context):
                     mesh.transform(tie_inst.transformation)
                     obj = bpy.data.objects.new(name=objname, object_data=mesh)
                     ties_collection.objects.link(obj)
+                    bmesh_manager.center_origin_to_geometry(obj)
 
 
 ##############################################

@@ -1,6 +1,6 @@
 import bmesh
 import bpy
-from mathutils import Vector
+import mathutils
 
 
 def mapUVs(mesh, uvs):
@@ -51,22 +51,22 @@ def clone(mesh):
     return mesh_clone
 
 
-def center_origin_to_center_of_mass(obj):
-    # get the mesh data from the object
+def center_origin_to_geometry(obj):
+    # Obtient la référence au mesh de l'objet
     mesh = obj.data
-    # create a bmesh from the mesh data
     bm = bmesh.new()
     bm.from_mesh(mesh)
-
-    # calculate the center of mass
-    center_of_mass = sum(v.co for v in bm.verts) / len(bm.verts)
-
-    # calculate the displacement needed to center the origin
-    displacement = -center_of_mass
-
-    # translate the mesh data and update the bmesh
-    bmesh.ops.translate(bm, vec=displacement, verts=bm.verts)
-
-    # update the mesh data and free the bmesh
+    # Calcule le centre de masse du mesh
+    center_of_mass = mathutils.Vector()
+    for v in bm.verts:
+        center_of_mass += v.co
+    center_of_mass /= len(bm.verts)
+    # Calcule le vecteur de translation pour déplacer les sommets du mesh
+    translate_vec = -center_of_mass
+    # Déplace les sommets du mesh avec le vecteur de translation
+    bmesh.ops.translate(bm, vec=translate_vec, verts=bm.verts)
+    # Déplace l'origine de l'objet vers le centre de masse du mesh
+    obj.location += center_of_mass
+    # Met à jour le mesh à partir du BMesh
     bm.to_mesh(mesh)
     bm.free()
