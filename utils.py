@@ -1,5 +1,7 @@
+import typing
+
 from .types import (IGHeader, IGSectionChunk, SectionIDTypeEnum, ZoneSectionIDTypeEnum, TieSectionIDTypeEnum,
-                    MobyIDTypeEnum)
+                    MobyIDTypeEnum, LevelNamesEnum)
 from .stream_helper import StreamHelper
 
 
@@ -25,7 +27,20 @@ def read_sections_chunks(headers: IGHeader, stream: StreamHelper, __relative_off
 
 
 def query_section(chunks: list[IGSectionChunk], section_id: int):
-    if section_id in SectionIDTypeEnum._value2member_map_ or section_id in ZoneSectionIDTypeEnum._value2member_map_ or section_id in TieSectionIDTypeEnum._value2member_map_:
+    if section_id in [chunk.id for chunk in chunks]:
         for section in chunks:
             if section.id == section_id:
                 return section
+
+
+def find_cleanlvlname(level_name: str) -> str:
+    locallevelname = level_name.replace(' ', 'µ', -1)
+    lvl_collection: typing.Any
+    lvl_collec_pname: str
+    clean_lvlname: str
+    if locallevelname in LevelNamesEnum.__dict__:
+        clean_lvlname = LevelNamesEnum[locallevelname].value
+    else:
+        clean_lvlname = level_name.replace(' ', '_', -1)
+
+    return clean_lvlname

@@ -1,4 +1,5 @@
 import io
+import math
 import struct
 
 import mathutils
@@ -15,7 +16,7 @@ def open_helper(stream: io.BufferedReader = None, filepath: str = None):
 class StreamHelper:
     """Stream helper: put the file reader into, it will work exactly like the io.BufferedReader class type !"""
     __stream: io.BufferedReader = None
-    offset = 0x0
+    offset: hex = 0x0
 
     def __init__(self, stream):
         self.__stream = stream
@@ -81,11 +82,17 @@ class StreamHelper:
         else:
             return struct.unpack('>e', self.peek(0x02))[0]
 
-    def readVector3Float(self, __offset: int = None, __relative: bool = True) -> tuple[float, float, float]:
+    def readVector3Float32(self, __offset: int = None, __relative: bool = True) -> tuple[float, float, float]:
         if __offset is not None:
             return struct.unpack('>3f', self.peek(0x0C, __offset, __relative))
         else:
             return struct.unpack('>3f', self.peek(0x0C))
+
+    def readVector3Float16(self, __offset: int = None, __relative: bool = True) -> tuple[float, float, float]:
+        if __offset is not None:
+            return struct.unpack('>3e', self.peek(0x06, __offset, __relative))
+        else:
+            return struct.unpack('>3e', self.peek(0x06))
 
     def readVector3Short(self, __offset: int = None, __relative: bool = True) -> tuple[int, int, int]:
         if __offset is not None:
@@ -94,20 +101,21 @@ class StreamHelper:
             return struct.unpack('>3h', self.peek(0x06))
 
     def readMatrix4x4(self, __offset: int = None, __relative: bool = True) -> mathutils.Matrix:
+        fmatrix: mathutils.Matrix
         if __offset is not None:
-            tuple1: tuple[float, float, float, float] = (
-                self.readFloat32(__offset + 0x00, __relative),
-                self.readFloat32(__offset + 0x10, __relative),
-                self.readFloat32(__offset + 0x20, __relative),
-                self.readFloat32(__offset + 0x30, __relative)
+            tuple1: tuple[float, float, float, float] = (           # Reversing the mirrored X transforms
+                self.readFloat32(__offset + 0x00, __relative) * -1,
+                self.readFloat32(__offset + 0x10, __relative) * -1,
+                self.readFloat32(__offset + 0x20, __relative) * -1,
+                self.readFloat32(__offset + 0x30, __relative) * -1
             )
-            tuple2: tuple[float, float, float, float] = (
+            tuple2: tuple[float, float, float, float] = (           # Y pos, but use engine's Z pos, they are reversed.
                 self.readFloat32(__offset + 0x08, __relative),
                 self.readFloat32(__offset + 0x18, __relative),
                 self.readFloat32(__offset + 0x28, __relative),
                 self.readFloat32(__offset + 0x38, __relative)
             )
-            tuple3: tuple[float, float, float, float] = (
+            tuple3: tuple[float, float, float, float] = (           # Z pos, but use engine's Y pos, they are reversed.
                 self.readFloat32(__offset + 0x04, __relative),
                 self.readFloat32(__offset + 0x14, __relative),
                 self.readFloat32(__offset + 0x24, __relative),
@@ -120,34 +128,35 @@ class StreamHelper:
                 self.readFloat32(__offset + 0x3C, __relative)
             )
             matrix: tuple[tuple, tuple, tuple, tuple] = (tuple1, tuple2, tuple3, tuple4)
-            return mathutils.Matrix(matrix)
+            fmatrix = mathutils.Matrix(matrix)
         else:
             tuple1: tuple[float, float, float, float] = (
-                self.readFloat32(0x00),
-                self.readFloat32(0x04),
-                self.readFloat32(0x08),
-                self.readFloat32(0x0C)
+                self.readFloat32(0x00) * -1,
+                self.readFloat32(0x10) * -1,
+                self.readFloat32(0x20) * -1,
+                self.readFloat32(0x30) * -1
             )
             tuple2: tuple[float, float, float, float] = (
-                self.readFloat32(0x10),
-                self.readFloat32(0x14),
+                self.readFloat32(0x08),
                 self.readFloat32(0x18),
-                self.readFloat32(0x1C)
+                self.readFloat32(0x28),
+                self.readFloat32(0x38)
             )
             tuple3: tuple[float, float, float, float] = (
-                self.readFloat32(0x20),
+                self.readFloat32(0x04),
+                self.readFloat32(0x14),
                 self.readFloat32(0x24),
-                self.readFloat32(0x28),
-                self.readFloat32(0x2C)
+                self.readFloat32(0x34)
             )
             tuple4: tuple[float, float, float, float] = (
-                self.readFloat32(0x30),
-                self.readFloat32(0x34),
-                self.readFloat32(0x38),
+                self.readFloat32(0x0C),
+                self.readFloat32(0x1C),
+                self.readFloat32(0x2C),
                 self.readFloat32(0x3C)
             )
             matrix: tuple[tuple, tuple, tuple, tuple] = (tuple1, tuple2, tuple3, tuple4)
-            return mathutils.Matrix(matrix)
+            fmatrix = mathutils.Matrix(matrix)
+        return fmatrix
 
     def readUByte(self, __offset: int = None, __relative: bool = True) -> bytes:
         if __offset is not None:
@@ -160,7 +169,7 @@ class StreamHelper:
             relative_position = int()
             string = str()
             while self.peek(0x01, __offset + relative_position, __relative) != b'\x00':
-                string += self.peek(0x01, __offset + relative_position, __relative).decode()
+                string += self.peek(0x01, __offset + relative_position, __relative).decode("ansi")
                 relative_position += 0x01
             return string
         else:

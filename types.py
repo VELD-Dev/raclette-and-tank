@@ -103,13 +103,18 @@ class IGAssetRef(dict):
 
 class MeshVertex(dict):
     location: tuple[int, int, int] | tuple[float, float, float]
+    multiplier: int
     UVs: tuple[float, float]
+    normals: tuple[float, float, float]
 
     def __loctuple__(self):
         return self.location
 
     def __uvstuple__(self):
         return self.UVs
+
+    def __nortuple__(self):
+        return self.normals
 
 
 class Tie(dict):

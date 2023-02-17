@@ -1,5 +1,6 @@
 import mathutils
-from . import (stream_helper, types)
+from . import stream_helper
+from . import types
 
 
 class TieInstance(dict):
@@ -45,7 +46,7 @@ class CTieInstance(TieInstance):
         super().__init__()
 
         self.transformation = stream.readMatrix4x4(0x00)
-        self.boundingPosition = stream.readVector3Float(0x40)
+        self.boundingPosition = stream.readVector3Float32(0x40)
         self.boundingRadius = stream.readFloat32(0x4C)
         self.tieIndex = stream.readUInt(0x50)
         self.tuid = int()

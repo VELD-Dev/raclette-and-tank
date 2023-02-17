@@ -1,4 +1,7 @@
-from . import (file_manager, ties, zones)
+from . import zones
+from . import ties
+from . import textures
+from . import file_manager
 from .stream_helper import (StreamHelper)
 from .types import (IGAssetRef, IGSectionChunk)
 from .utils import (read_sections_chunks, read_ighw_header, query_section)
@@ -6,6 +9,7 @@ from .utils import (read_sections_chunks, read_ighw_header, query_section)
 
 class AssetManager:
     def __init__(self, fm: file_manager.FileManager, operator):
+        self.textures_ref: list[IGAssetRef] = list[IGAssetRef]()
         print("AssetManager: INIT")
         isOld = fm.isIE2
         self.fm: file_manager.FileManager = fm
@@ -48,6 +52,13 @@ class AssetManager:
                         zone = zones.ZoneReader(stream, zone_ref)
                         if zone.ties_instances is not None:
                             self.zones.append(zone)
+                #elif igfile == "highmips.dat" and operator.use_textures:
+                #    self.LoadTextures()
+                #    self.textures = list[textures.TextureReader]()
+                #    for texture_ref in self.textures_ref:
+                #        print("----")
+                #        print(texture_ref.__dict__)
+                #        texture = textures.TextureReader(stream, texture_ref)
 
                 '''
                 if igfile == "mobys.dat" and operator.use_mobys == True:
@@ -60,6 +71,9 @@ class AssetManager:
         else:
             print("AssetManager: Is Old! Aborting...")
 
+    ##############
+    #### TIES ####
+    ##############
     def LoadTies(self):
         if self.fm.isIE2:
             print("TIE_STREAM: Unsupported format !")
@@ -76,10 +90,36 @@ class AssetManager:
             asset_ref.tuid = assetlookup.readULong(0x00)
             asset_ref.offset = assetlookup.readUInt(0x08)
             asset_ref.length = assetlookup.readUInt(0x0C)
-            # print("o:{2} TIE_RAW-REF {0}: {1}".format(hex(asset_ref.tuid), asset_ref.__dict__, hex(assetlookup.offset)))
             assetlookup.jump(0x10)
             self.ties_refs.append(asset_ref)
 
+    ##################
+    #### TEXTURES ####
+    ##################
+    def LoadTextures(self):
+        if self.fm.isIE2:
+            print("UNSUPPORTED GAME VERSION")
+            return
+        else:
+            self.LoadTexturesNew()
+
+    def LoadTexturesNew(self):
+        assetlookup: StreamHelper = self.fm.igfiles["assetlookup.dat"]
+        highresTexturesSection = query_section(self.sections, 0x1D1C0)
+        assetlookup.seek(highresTexturesSection.offset)
+        self.textures_ref = list[IGAssetRef]()
+        for i in range(int(highresTexturesSection.length / 0x10)):
+            asset_ref = IGAssetRef()
+            asset_ref.tuid = assetlookup.readULong(0x00)
+            asset_ref.offset = assetlookup.readUInt(0x08)
+            asset_ref.length = assetlookup.readUInt(0x0C)
+            assetlookup.jump(0x10)
+            self.textures_ref.append(asset_ref)
+
+
+    ###############
+    #### ZONES ####
+    ###############
     def LoadZones(self):
         if self.fm.isIE2:
             print("UNSUPPORTED GAME VERSION")
@@ -104,6 +144,9 @@ class AssetManager:
             assetlookup.jump(0x10)
             self.zones_refs.append(asset_ref)
 
+    ###############
+    #### MOBYS ####
+    ###############
     def LoadMobys(self):
         if self.fm.isIE2:
             print("MOBY_STREAM: Unsupported format!")

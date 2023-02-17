@@ -1,5 +1,6 @@
 from . import types
 from .stream_helper import (StreamHelper)
+import re
 
 
 def read_tie(stream: StreamHelper, subfile_offset: int) -> types.Tie:
@@ -8,9 +9,11 @@ def read_tie(stream: StreamHelper, subfile_offset: int) -> types.Tie:
     res.metadata_count = stream.readUByte(0x0F)
     res.vertex_buffer_start = stream.readUInt(0x14)
     res.vertex_buffer_size = stream.readUInt(0x18)
-    res.scale = stream.readVector3Float(0x20)
+    res.scale = stream.readVector3Float32(0x20)
     name_offset = stream.readUInt(0x64)
     res.tuid = stream.readULong(0x68)
+    res.name = stream.readString(subfile_offset + name_offset, False).split("/")[-1]
+    print(res.name)
 
     # Read name
     # previous_offset = stream.offset
@@ -96,6 +99,7 @@ class TieRefReader:
 
                 stream.jump(0x14)
             vertices.append(mesh_vertices)
+            print("VERTEX (TUID:{0}): {1}".format(hex(self.tie.tie.tuid), mesh_vertices[0].__dict__))
         self.vertices = vertices
 
         # READ INDICES
@@ -117,7 +121,7 @@ def read_indices(stream: StreamHelper):
 
 class CTie:
     def __init__(self, stream: StreamHelper, tie_ref: types.IGAssetRef):
-        tie = read_tie(stream, stream.offset)
+        tie = read_tie(stream, tie_ref.offset)
         tie_meshes: list[types.TieMesh] = list[types.TieMesh]()
         stream.seek(tie_ref.offset + tie.meshes_offset)
         for i in range(tie.metadata_count):
@@ -127,11 +131,16 @@ class CTie:
         self.tie = tie
         self.tie_meshes = tie_meshes
 
-    def read_vertex(self, stream: StreamHelper):
+    def read_vertex(self, stream: StreamHelper) -> types.MeshVertex:
         res: types.MeshVertex = types.MeshVertex()
         x, y, z = stream.readVector3Short(0x00)
         sx, sy, sz = self.tie.scale
         res.location = (x * sx, y * sy, z * sz)
+        res.multiplier = 0x7FFF # stream.readUShort(0x06)
+        # print(f"o:{hex(stream.offset)} - divider: {res.multiplier}")
         res.UVs = (stream.readFloat16(0x08), stream.readFloat16(0x0A))
+        nx, ny, nz = stream.readVector3Short(0x0C)
+        res.normals = (nx / res.multiplier, ny / res.multiplier, nz / res.multiplier)
+        # res.normals = (stream.readVector3Float16(0x0C))
         # print("o:{0} VERTEX (TUID:{1}): {2}".format(hex(stream.offset), hex(self.tie.tuid), res.__dict__))
         return res
