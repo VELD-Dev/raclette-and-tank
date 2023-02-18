@@ -1,12 +1,12 @@
 from . import stream_helper
-from . import types
+from . import rat_types
 from .utils import (read_sections_chunks, read_ighw_header, query_section)
 
 
 class Debug:
     stream: stream_helper.StreamHelper
-    header: types.IGHeader
-    chunks: list[types.IGSectionChunk]
+    header: rat_types.IGHeader
+    chunks: list[rat_types.IGSectionChunk]
 
     def __init__(self, stream: stream_helper.StreamHelper):
         self.stream = stream

@@ -7,7 +7,6 @@ from .stream_helper import (StreamHelper, open_helper)
 class FileManager:
 
     def __init__(self, folderpath: str):
-        print("FileManager: INIT")
         self.folderpath = folderpath
         self.igfiles: dict[str, StreamHelper] = dict[str, StreamHelper]()
         self.otherfiles: dict[str, StreamHelper] = dict[str, StreamHelper]()

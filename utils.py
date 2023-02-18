@@ -1,7 +1,10 @@
+import time
 import typing
+import struct
+import bpy
 
-from .types import (IGHeader, IGSectionChunk, SectionIDTypeEnum, ZoneSectionIDTypeEnum, TieSectionIDTypeEnum,
-                    MobyIDTypeEnum, LevelNamesEnum)
+from .rat_types import (IGHeader, IGSectionChunk, SectionIDTypeEnum, ZoneSectionIDTypeEnum, TieSectionIDTypeEnum,
+                        MobyIDTypeEnum, LevelNamesEnum)
 from .stream_helper import StreamHelper
 
 
@@ -44,3 +47,13 @@ def find_cleanlvlname(level_name: str) -> str:
         clean_lvlname = level_name.replace(' ', '_', -1)
 
     return clean_lvlname
+
+
+def create_image_from_buffer(buffer, width, height):
+    # Create a new image in Blender
+    image = bpy.data.images.new(name="Texture", width=width, height=height)
+    # Convert the buffer to a list of tuples containing RGBA values
+    rgba_values = struct.unpack(str(width * height * 4) + "B", buffer)
+    # Assign the RGBA values to the image
+    image.pixels = [channel / 255 for channel in rgba_values]
+    return image

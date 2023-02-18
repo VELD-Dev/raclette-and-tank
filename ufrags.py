@@ -5,7 +5,7 @@ import mathutils
 
 class UFrag(dict):
     """0x80 Long"""
-    transofmration: mathutils.Matrix
+    transformation: mathutils.Matrix
     """0x40 Long"""
     indexOffset: int
     """0x04 Long"""

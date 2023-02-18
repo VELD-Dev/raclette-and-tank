@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os.path
+import os
+import sys
 import typing
 
 import bpy
@@ -33,7 +35,7 @@ bl_info = {
         "R&T Importer was made for animators, fangame developers and all those fan stuff. "
         "R&T Importer IS NOT made for level editing ! Use Lunacy Level Editor instead."),
     "blender": (3, 3, 0),
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "location": "File > Import > Extract & Import RAC Assets",
     "warning": "Work in progress, be careful, the mod may crash Blender, always backup your files !",
     "doc_url": "https://github.com/VELD-Dev/raclette-and-tank",
@@ -50,7 +52,7 @@ if 'bpy' in locals():
     importlib.reload(file_manager)
     importlib.reload(assets_manager)
     importlib.reload(mobys)
-    importlib.reload(types)
+    importlib.reload(rat_types)
     importlib.reload(ties)
     importlib.reload(zones)
     importlib.reload(stream_helper)
@@ -58,7 +60,7 @@ if 'bpy' in locals():
 else:
     import file_manager
     import assets_manager
-    import types
+    import rat_types
     import bmesh_manager
     import utils
 
@@ -80,7 +82,6 @@ IG_CHUNK_ID_MOBY_INDICES = 0xE100
 
 def extract_and_import(operator, context):
     dirname = operator.directory
-    print(dirname)
     filemanager = file_manager.FileManager(dirname)
     assetmanager = assets_manager.AssetManager(filemanager, operator)
 
@@ -126,7 +127,7 @@ def extract_and_import(operator, context):
                     normals.append(vertex.__nortuple__())
                 mesh.from_pydata(verts, [], faces)
                 mesh = bmesh_manager.mapUVs(mesh, uvs)
-                mesh = bmesh_manager.mapNormals(mesh, normals)
+                # mesh = bmesh_manager.set_normals(mesh, normals)
                 mesh.update()
                 submeshes.append(mesh)
             ties[tie.tie.tie.tuid] = submeshes
@@ -141,9 +142,7 @@ def extract_and_import(operator, context):
 
         zones = {}
         for zone in assetmanager.zones:
-            print(zone)
             zones[zone.zone_tuid] = zone
-            print(f"Zone {zone.zone_tuid} Class Inst: {zone.__dict__} - Ties: {len(zone.ties_instances)}")
         for zone in zones.values():
             for tie_inst in zone.ties_instances:
                 ties_data = assetmanager.ties

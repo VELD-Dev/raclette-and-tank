@@ -1,6 +1,6 @@
 import mathutils
 from . import stream_helper
-from . import types
+from . import rat_types
 
 
 class TieInstance(dict):
@@ -15,8 +15,8 @@ class TieInstance(dict):
     """0x04 Long"""
 
 
-def read_ighw_header(stream: stream_helper.StreamHelper) -> types.IGHeader:
-    header: types.IGHeader = types.IGHeader()
+def read_ighw_header(stream: stream_helper.StreamHelper) -> rat_types.IGHeader:
+    header: rat_types.IGHeader = rat_types.IGHeader()
     header.magic1 = stream.readUInt(0x00)
     header.magic2 = stream.readUInt(0x04)
     header.chunks_count = stream.readUInt(0x08)
@@ -24,9 +24,9 @@ def read_ighw_header(stream: stream_helper.StreamHelper) -> types.IGHeader:
     return header
 
 
-def read_ighw_chunks(stream: stream_helper.StreamHelper, headers: types.IGHeader):
+def read_ighw_chunks(stream: stream_helper.StreamHelper, headers: rat_types.IGHeader):
     for i in range(headers.chunks_count):
-        ighw_chunk: types.IGSectionChunk = types.IGSectionChunk()
+        ighw_chunk: rat_types.IGSectionChunk = rat_types.IGSectionChunk()
         ighw_chunk.id = stream.readUInt(0x00)
         ighw_chunk.offset = stream.readUInt(0x04)
         ighw_chunk.count = stream.readUInt(0x08) & 0x00FFFFFF
@@ -35,7 +35,7 @@ def read_ighw_chunks(stream: stream_helper.StreamHelper, headers: types.IGHeader
         yield ighw_chunk
 
 
-def query_section(section_id: int, chunks: list[types.IGSectionChunk]):
+def query_section(section_id: int, chunks: list[rat_types.IGSectionChunk]):
     for section in chunks:
         if section.id == section_id:
             return section
@@ -53,26 +53,25 @@ class CTieInstance(TieInstance):
 
 
 class ZoneReader:
-    ighw_headers: types.IGHeader
-    ighw_chunks: list[types.IGSectionChunk]
+    ighw_headers: rat_types.IGHeader
+    ighw_chunks: list[rat_types.IGSectionChunk]
     zone_tuid: int
     ties_tuids: list[int]
     ties_instances: list[CTieInstance]
 
-    def __init__(self, stream: stream_helper.StreamHelper, zone_ref: types.IGAssetRef):
+    def __init__(self, stream: stream_helper.StreamHelper, zone_ref: rat_types.IGAssetRef):
         self.ighw_headers = None
         self.ighw_chunks = None
         self.zone_tuid = None
         self.ties_tuids = None
         self.ties_instances = None
         stream.seek(zone_ref.offset)
-        self.ighw_headers: types.IGHeader = read_ighw_header(stream)
+        self.ighw_headers: rat_types.IGHeader = read_ighw_header(stream)
         stream.jump(0x20)
-        self.ighw_chunks: list[types.IGSectionChunk] = list(read_ighw_chunks(stream, self.ighw_headers))
+        self.ighw_chunks: list[rat_types.IGSectionChunk] = list(read_ighw_chunks(stream, self.ighw_headers))
         self.zone_tuid = zone_ref.tuid
 
         # READ TIES TUIDS
-        print(self.ighw_chunks)
         chunk = query_section(0x7200, self.ighw_chunks)
         if chunk is None:
             return
@@ -80,10 +79,8 @@ class ZoneReader:
         stream.seek(zone_ref.offset + chunk.offset)
         for i in range(chunk.count):
             tuid = stream.readULong(0x00)
-            print(f"o:{hex(stream.offset)} TIE_INST_TUID {i}: {hex(tuid)}")
             self.ties_tuids.append(tuid)
             stream.jump(0x08)  # Jump to the next Tie TUID
-        print(self.ties_tuids)
 
         # READ TIES INSTANCE
         chunk = query_section(0x7240, self.ighw_chunks)
@@ -94,7 +91,6 @@ class ZoneReader:
         for i in range(chunk.count):
             tie_instance = CTieInstance(stream)
             tie_instance.tuid = self.ties_tuids[tie_instance.tieIndex]
-            print(f"o:{hex(stream.offset)} TIE_INST {i}: {tie_instance.__dict__}")
             stream.jump(0x80)  # Jump to the next Tie Instance
             self.ties_instances.append(tie_instance)
 
