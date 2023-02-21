@@ -81,9 +81,9 @@ Importation settings of levels
 ### Category: Settings
 | Type      | Default | Supported |    Option Name     | Description                                                                                                                   |
 |:----------|:-------:|:---------:|:------------------:|:------------------------------------------------------------------------------------------------------------------------------|
-| `Boolean` |    ✅    |     ❌     |      Textures      | Wether textures should be extracted, imported and applied or not.                                                             |
+| `Boolean` |    ✅    |     🚧     |      Textures      | Wether textures should be extracted, imported and applied or not.                                                             |
 | `Boolean` |    ❌    |     ❌     |     Lightning      | Wether light points should be extracted and imported or not.                                                                  |
-| `Boolean` |    ✅    |    🚧     |       Zones        | Wether every mesh supported by zones should be put into its zone<br/>Creating subfolders in Blender.                          |
+| `Boolean` |    ✅    |    ✅     |       Zones        | Wether every mesh supported by zones should be put into its zone<br/>Creating subfolders in Blender.                          |
 | `Boolean` |    ✅    |     ✅     | Create Collections | Wether a creation should be created for each mesh type (Mobys,<br/>Ties, Shrubs, UFrags) or everything should be put at root. |
 
 [^1]: It's basically the greatest part of the terrain and walkable parts of maps.
