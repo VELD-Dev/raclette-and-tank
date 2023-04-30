@@ -138,3 +138,34 @@ class TieMesh(dict):
     oldShaderIndex: int
     newShaderIndex: int
     vertices: list[MeshVertex]
+
+
+class OldTextureRef(dict):
+    """0x20 bytes long"""
+    offset: int
+    """Offset inside textures.dat"""
+    mipmapCount: int
+    formatBitfield: int
+    width: int
+    height: int
+
+
+class OldTextstreamRef(dict):
+    """0x10 bytes long"""
+    offset: int
+    index: int
+
+
+class NewTextMeta(dict):
+    format: int
+    mipmapcount: int
+    widthPow: int
+    heightPow: int
+
+
+class TextureFormat(enum.Enum):
+    R5G6B5 = 0x03
+    A8R8G8B8 = 0x05
+    DXT1 = 0x06
+    DXT3 = 0x07
+    DXT5 = 0x08

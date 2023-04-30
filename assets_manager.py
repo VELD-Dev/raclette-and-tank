@@ -43,13 +43,13 @@ class AssetManager:
                         zone = zones.ZoneReader(stream, zone_ref)
                         if zone.ties_instances is not None:
                             self.zones.append(zone)
-                # elif igfile == "highmips.dat" and operator.use_textures:
-                #    self.LoadTextures()
-                #    self.textures = list[textures.TextureReader]()
-                #    for texture_ref in self.textures_ref:
-                #        print("----")
-                #        print(texture_ref.__dict__)
-                #        texture = textures.TextureReader(stream, texture_ref)
+                elif igfile == "highmips.dat" and operator.use_textures:
+                    self.LoadTextures()
+                    self.textures = list[textures.TextureReader]()
+                    for texture_ref in self.textures_ref:
+                        print("----")
+                        print(texture_ref.__dict__)
+                        texture = textures.TextureReader(stream, texture_ref)
 
                 '''
                 if igfile == "mobys.dat" and operator.use_mobys == True:
